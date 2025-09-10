@@ -1,6 +1,7 @@
 db.sqlite3
 media
 meda_env
+venv
 .venv
 *.zip
 __pycache__
