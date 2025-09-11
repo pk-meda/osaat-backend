@@ -398,9 +398,13 @@ class RefractionExamination(models.Model):
 
 class Diagnosis(models.Model):
     reference_number = models.CharField(max_length=50, unique=True)
-    follow_up_required = models.BooleanField(default=False)
-    follow_up_date = models.DateField(null=True, blank=True)
-    diagnosis = models.CharField(max_length=255, null=True, blank=True)
+    # follow_up_required = models.BooleanField(default=False)
+    # follow_up_date = models.DateField(null=True, blank=True)
+    # diagnosis = models.CharField(max_length=255, null=True, blank=True)
+    refractive_error_type = models.CharField(max_length=100, null=True, blank=True)
+    affected_eye = models.CharField(max_length=100, null=True, blank=True)
+    ocular_condition = models.CharField(max_length=100, null=True, blank=True)
+    management_plan = models.CharField(max_length=100, null=True, blank=True)
     diagnosis_management = models.BooleanField(default=True)
 
     def __str__(self):
