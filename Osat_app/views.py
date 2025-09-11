@@ -594,11 +594,10 @@ class FirstScreeningAPIView(APIView):
         if serializer.is_valid():
             first_screening = serializer.save()
 
-            # participant ko update karo ya create karo
             participant, created = Participant.objects.get_or_create(
                 reference_number=first_screening.reference_number
             )
-            participant.created_by = request.user  # 👈 yaha user set hoga
+            participant.created_by = request.user
             participant.first_screening = True
             participant.save()
 
