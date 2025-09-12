@@ -283,6 +283,13 @@ class SecondScreening(models.Model):
     relationship = models.CharField(max_length=50)
     contact_first_name = models.CharField(max_length=100, null=True, blank=True)
     contact_surname = models.CharField(max_length=100, null=True, blank=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="second_screenings",
+        null=True,
+        blank=True,
+    )
     # refCount = models.IntegerField(null=True, blank=True)
     # refPrefix = models.CharField(max_length=50, null=True, blank=True)
     # file = models.FileField(upload_to='eye_tests/', null=True, blank=True)
@@ -299,12 +306,23 @@ class SecondScreening(models.Model):
 class Dispensing(models.Model):
     reference_number = models.CharField(max_length=20)
     frame_choice = models.CharField(max_length=50, null=True, blank=True)
-    glasses_ordered = models.BooleanField(default=False)
-    glasses_ready = models.BooleanField(default=False)
-    glasses_received = models.BooleanField(default=False)
-    glasses_dispensed = models.BooleanField(default=False)
-    notification_sent = models.BooleanField(default=False)
+    # glasses_ordered = models.BooleanField(default=False)
+    # glasses_ready = models.BooleanField(default=False)
+    # glasses_received = models.BooleanField(default=False)
+    # glasses_dispensed = models.BooleanField(default=False)
+    # notification_sent = models.BooleanField(default=False)
     # age = models.IntegerField(blank=True)  # Default age to avoid migration issues
+    lenses_type = models.CharField(max_length=50, null=True, blank=True)
+    pd_distance = models.CharField(max_length=10, null=True, blank=True)
+    pd_near = models.CharField(max_length=10, null=True, blank=True)
+    frame_distance = models.CharField(max_length=10, null=True, blank=True)
+    frame_near = models.CharField(max_length=10, null=True, blank=True)
+    frame_bifocal = models.CharField(max_length=10, null=True, blank=True)
+    fitting_height_re = models.CharField(max_length=10, null=True, blank=True)
+    fitting_height_le = models.CharField(max_length=10, null=True, blank=True)
+    comments = models.CharField(max_length=255, null=True, blank=True)
+    provision_date = models.DateTimeField(auto_now_add=True)
+    provision_status = models.CharField(max_length=50, null=True, blank=True)
     dispensing = models.BooleanField(default=True)
 
     def __str__(self):
@@ -982,6 +1000,13 @@ class PatientComplaint(models.Model):
 
     selected_complaint = models.TextField(null=True, blank=True)
     reference_number = models.CharField(max_length=100, unique=True, blank=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="complaints",
+        null=True,
+        blank=True,
+    )
 
     def set_complaints(self, complaints):
         """
