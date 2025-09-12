@@ -726,29 +726,82 @@ class SecondscreeningAPIView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
-    def post(self, request, *args, **kwargs):
-        serializer = SecondscreeningSerializer(data=request.data)
-        if serializer.is_valid():
-            second_screening = serializer.save()
+    def get(self, request, *args, **kwargs):
+        reference_number = request.query_params.get("reference_number")
 
-            participant, created = Participant.objects.get_or_create(
+        if reference_number:
+            screenings = SecondScreening.objects.filter(
+                reference_number=reference_number, created_by=request.user
+            )
+        else:
+            screenings = SecondScreening.objects.filter(created_by=request.user)
+
+        serializer = SecondscreeningSerializer(screenings, many=True)
+
+        if serializer.data:
+            return Response(
+                {
+                    "body": serializer.data,
+                    "message": "Data fetched successfully",
+                    "error": False,
+                },
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response(
+                {
+                    "body": [],
+                    "message": "No records found",
+                    "error": True,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    def post(self, request, *args, **kwargs):
+        reference_number = request.data.get("reference_number")
+
+        if not reference_number:
+            return Response(
+                {"body": {}, "message": "Reference number is required", "error": True},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        instance = SecondScreening.objects.filter(
+            reference_number=reference_number
+        ).first()
+
+        serializer = SecondscreeningSerializer(
+            instance, data=request.data, partial=True
+        )
+
+        if serializer.is_valid():
+            second_screening = serializer.save(created_by=request.user)
+
+            participant, _ = Participant.objects.get_or_create(
                 reference_number=second_screening.reference_number
             )
             participant.created_by = request.user
             participant.second_screening = True
             participant.save()
 
-            response_serializer = SecondscreeningSerializer(second_screening)
             return Response(
                 {
-                    "body": response_serializer.data,
-                    "message": "Details updated successfully.",
+                    "body": serializer.data,
+                    "message": "Details updated successfully"
+                    if instance
+                    else "Details created successfully",
                     "error": False,
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED,
             )
+
+        first_error = next(iter(serializer.errors.values()))[0]
         return Response(
-            {"body": {}, "message": "Invalid data provided.", "error": True},
+            {
+                "body": {},
+                "message": f"Validation failed - {first_error}",
+                "error": True,
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -1586,26 +1639,99 @@ class RefractionSpectacleAPIView(APIView):
         )
 
 
+# sahithi's code
+# class ComplaintView(APIView):
+#     def post(self, request):
+#         """
+#         Create a new patient complaint with selected complaints.
+#         """
+#         serializer = PatientComplaintSerializer(data=request.data)
+#         if serializer.is_valid():
+#             # Save the patient complaint object
+#             patient_complaint = serializer.save()
+#             return Response(
+#                 {
+#                     "body": PatientComplaintSerializer(patient_complaint).data,
+#                     "message": "Details updated successfully.",
+#                     "error": False,
+#                 },
+#                 status=status.HTTP_201_CREATED,
+#             )
+
+
+#         return Response(
+#             {"body": [], "message": "Failed to update details.", "error": True},
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+
 class ComplaintView(APIView):
-    def post(self, request):
-        """
-        Create a new patient complaint with selected complaints.
-        """
-        serializer = PatientComplaintSerializer(data=request.data)
-        if serializer.is_valid():
-            # Save the patient complaint object
-            patient_complaint = serializer.save()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        reference_number = request.query_params.get("reference_number")
+
+        if reference_number:
+            complaints = PatientComplaint.objects.filter(
+                reference_number=reference_number, created_by=request.user
+            )
+        else:
+            complaints = PatientComplaint.objects.filter(created_by=request.user)
+
+        serializer = PatientComplaintSerializer(complaints, many=True)
+
+        if serializer.data:
             return Response(
                 {
-                    "body": PatientComplaintSerializer(patient_complaint).data,
-                    "message": "Details updated successfully.",
+                    "body": serializer.data,
+                    "message": "Data fetched successfully",
                     "error": False,
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
             )
-
         return Response(
-            {"body": [], "message": "Failed to update details.", "error": True},
+            {"body": [], "message": "No records found", "error": True},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    def post(self, request, *args, **kwargs):
+        reference_number = request.data.get("reference_number")
+        if not reference_number:
+            return Response(
+                {"body": {}, "message": "Reference number is required", "error": True},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        instance = PatientComplaint.objects.filter(
+            reference_number=reference_number
+        ).first()
+        if instance:
+            serializer = PatientComplaintSerializer(
+                instance, data=request.data, partial=True
+            )
+        else:
+            serializer = PatientComplaintSerializer(data=request.data)
+
+        if serializer.is_valid():
+            complaint = serializer.save(created_by=request.user)
+
+            return Response(
+                {
+                    "body": PatientComplaintSerializer(complaint).data,
+                    "message": "Details updated successfully"
+                    if instance
+                    else "Details created successfully",
+                    "error": False,
+                },
+                status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED,
+            )
+        first_error = next(iter(serializer.errors.values()))[0]
+        return Response(
+            {
+                "body": {},
+                "message": f"Validation failed - {first_error}",
+                "error": True,
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 

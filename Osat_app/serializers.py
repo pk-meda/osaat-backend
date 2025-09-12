@@ -211,9 +211,39 @@ class RefractionSpectacleSerializer(serializers.ModelSerializer):
 #         return patient_complaint
 
 
+# class PatientComplaintSerializer(serializers.ModelSerializer):
+#     selected_complaint = serializers.ListField(child=serializers.CharField())
+
+#     class Meta:
+#         model = PatientComplaint
+#         fields = "__all__"
+
+
 class PatientComplaintSerializer(serializers.ModelSerializer):
-    selected_complaint = serializers.ListField(child=serializers.CharField())
+    selected_complaint = serializers.ListField(
+        child=serializers.CharField(), write_only=True
+    )
+    complaints = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = PatientComplaint
-        fields = "__all__"
+        fields = ["id", "reference_number", "selected_complaint", "complaints"]
+
+    def get_complaints(self, obj):
+        return obj.get_complaints()  # model ka helper function
+
+    def create(self, validated_data):
+        complaints = validated_data.pop("selected_complaint", [])
+        instance = PatientComplaint.objects.create(**validated_data)
+        instance.set_complaints(complaints)
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        complaints = validated_data.pop("selected_complaint", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if complaints is not None:
+            instance.set_complaints(complaints)
+        instance.save()
+        return instance
