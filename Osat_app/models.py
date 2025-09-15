@@ -999,6 +999,7 @@ class PatientComplaint(models.Model):
     ]
 
     selected_complaint = models.TextField(null=True, blank=True)
+    effected_eye = models.CharField(max_length=50, null=True, blank=True)
     reference_number = models.CharField(max_length=100, unique=True, blank=True)
     created_by = models.ForeignKey(
         User,
