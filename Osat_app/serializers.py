@@ -220,17 +220,20 @@ class RefractionSpectacleSerializer(serializers.ModelSerializer):
 
 
 class PatientComplaintSerializer(serializers.ModelSerializer):
-    selected_complaint = serializers.ListField(
-        child=serializers.CharField(), write_only=True
-    )
-    complaints = serializers.SerializerMethodField(read_only=True)
+    selected_complaint = serializers.ListField(child=serializers.CharField())
 
     class Meta:
         model = PatientComplaint
-        fields = ["id", "reference_number", "selected_complaint", "complaints"]
+        fields = "__all__"
+        extra_kwargs = {"created_by": {"read_only": True}}
 
-    def get_complaints(self, obj):
-        return obj.get_complaints()  # model ka helper function
+    def to_representation(self, instance):
+        """Convert DB string -> list for API response"""
+        representation = super().to_representation(instance)
+        representation["selected_complaint"] = (
+            instance.get_complaints() if instance.selected_complaint else []
+        )
+        return representation
 
     def create(self, validated_data):
         complaints = validated_data.pop("selected_complaint", [])
