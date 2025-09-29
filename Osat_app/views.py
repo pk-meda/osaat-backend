@@ -117,7 +117,49 @@ class RegisterAPIView(APIView):
         )
 
 
-# User_Login API
+# # User_Login API
+# class UserLoginView(APIView):
+#     def post(self, request):
+#         email = request.data.get("email")
+#         password = request.data.get("password")
+
+#         if not email or not password:
+#             return Response(
+#                 {
+#                     "body": [],
+#                     "message": "Email and password are required",
+#                     "error": True,
+#                 },
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         try:
+#             user = User.objects.get(email=email)
+#         except User.DoesNotExist:
+#             return Response(
+#                 {"body": [], "message": "Invalid email or password", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         user = authenticate(username=user.username, password=password)
+
+#         if user:
+#             token, created = Token.objects.get_or_create(user=user)
+#             return Response(
+#                 {
+#                     "body": {"token": token.key},
+#                     "message": "Login successful",
+#                     "error": False,
+#                 },
+#                 status=status.HTTP_200_OK,
+#             )
+
+#         return Response(
+#             {"body": [], "message": "Invalid email or password", "error": True},
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+
 class UserLoginView(APIView):
     def post(self, request):
         email = request.data.get("email")
@@ -145,9 +187,18 @@ class UserLoginView(APIView):
 
         if user:
             token, created = Token.objects.get_or_create(user=user)
+
+            # Serialize user info
+            user_data = {
+                "id": user.id,
+                "name": f"{user.first_name} {user.last_name}".strip(),
+                "email": user.email,
+                "mobile_number": user.username,  # Here stored the mobile number
+            }
+
             return Response(
                 {
-                    "body": {"token": token.key},
+                    "body": {"token": token.key, "user": user_data},
                     "message": "Login successful",
                     "error": False,
                 },
@@ -1269,7 +1320,79 @@ class SurgeryTreatmentHistoryAPIView(APIView):
         )
 
 
-# other-Medical API
+# # other-Medical API
+# class OtherMedicalIssueResponseView(APIView):
+#     def get(self, request):
+#         reference_number = request.query_params.get("reference_number")
+
+#         if not reference_number:
+#             return Response(
+#                 {"body": {}, "message": "Reference number is required", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         medical_issue = OtherMedicalIssueResponse.objects.filter(
+#             reference_number__iexact=reference_number.strip()
+#         ).first()
+
+#         if not medical_issue:
+#             return Response(
+#                 {
+#                     "body": {},
+#                     "message": "Medical issue response not found",
+#                     "error": True,
+#                 },
+#                 status=status.HTTP_404_NOT_FOUND,
+#             )
+
+#         serializer = OtherMedicalIssueResponseSerializer(medical_issue)
+
+#         return Response(
+#             {
+#                 "body": serializer.data,
+#                 "message": "Medical issue response retrieved successfully",
+#                 "error": False,
+#             },
+#             status=status.HTTP_200_OK,
+#         )
+
+#     def post(self, request):
+#         serializer = OtherMedicalIssueResponseSerializer(data=request.data)
+
+#         if serializer.is_valid():
+#             obj = serializer.save()  # Save the validated data
+#             reference_number = serializer.validated_data.get("reference_number")
+
+#             # Try updating Participant model if it exists
+#             try:
+#                 participant = Participant.objects.get(reference_number=reference_number)
+#                 participant.other_medical_issues = (
+#                     obj.other_medical_issues
+#                 )  # Update field
+#                 participant.save()
+#             except Participant.DoesNotExist:
+#                 pass  # If Participant does not exist, do nothing
+
+#             return Response(
+#                 {
+#                     "body": serializer.data,
+#                     "message": "Other Medical history saved successfully",
+#                     "error": False,
+#                 },
+#                 status=status.HTTP_201_CREATED,
+#             )
+
+#         return Response(
+#             {
+#                 "body": {},
+#                 "message": "Invalid input",
+#                 "error": True,
+#                 "details": serializer.errors,
+#             },
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+
 class OtherMedicalIssueResponseView(APIView):
     def get(self, request):
         reference_number = request.query_params.get("reference_number")
@@ -1279,12 +1402,11 @@ class OtherMedicalIssueResponseView(APIView):
                 {"body": {}, "message": "Reference number is required", "error": True},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        medical_issue = OtherMedicalIssueResponse.objects.filter(
-            reference_number__iexact=reference_number.strip()
-        ).first()
-
-        if not medical_issue:
+        try:
+            medical_issue = OtherMedicalIssueResponse.objects.get(
+                reference_number__iexact=reference_number.strip()
+            )
+        except OtherMedicalIssueResponse.DoesNotExist:
             return Response(
                 {
                     "body": {},
@@ -1295,7 +1417,6 @@ class OtherMedicalIssueResponseView(APIView):
             )
 
         serializer = OtherMedicalIssueResponseSerializer(medical_issue)
-
         return Response(
             {
                 "body": serializer.data,
@@ -1306,29 +1427,41 @@ class OtherMedicalIssueResponseView(APIView):
         )
 
     def post(self, request):
+        reference_number = request.data.get("reference_number")
+
+        if not reference_number:
+            return Response(
+                {"body": {}, "message": "Reference number is required", "error": True},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = OtherMedicalIssueResponseSerializer(data=request.data)
-
         if serializer.is_valid():
-            obj = serializer.save()  # Save the validated data
-            reference_number = serializer.validated_data.get("reference_number")
+            data = serializer.validated_data
 
-            # Try updating Participant model if it exists
+            # Update or Create ek hi record per reference_number
+            obj, created = OtherMedicalIssueResponse.objects.update_or_create(
+                reference_number=reference_number,
+                defaults={
+                    "medical_issue": data.get("medical_issue"),
+                    "other_medical_issues": data.get("other_medical_issues"),
+                },
+            )
+
             try:
                 participant = Participant.objects.get(reference_number=reference_number)
-                participant.other_medical_issues = (
-                    obj.other_medical_issues
-                )  # Update field
+                participant.other_medical_issues = obj.other_medical_issues
                 participant.save()
             except Participant.DoesNotExist:
-                pass  # If Participant does not exist, do nothing
+                pass
 
             return Response(
                 {
-                    "body": serializer.data,
+                    "body": OtherMedicalIssueResponseSerializer(obj).data,
                     "message": "Other Medical history saved successfully",
                     "error": False,
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED,
             )
 
         return Response(

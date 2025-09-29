@@ -39,9 +39,9 @@ urlpatterns = [
         name="Surgery-History",
     ),
     path(
-        "Other-Medical-History",
+        "other-medical-history",
         views.OtherMedicalIssueResponseView.as_view(),
-        name="Medical-History",
+        name="medical-history",
     ),
     path("Family-History", views.FamilyHistoryAPIView.as_view(), name="Family-History"),
     path(
