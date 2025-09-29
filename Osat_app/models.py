@@ -590,11 +590,11 @@ class SurgeryTreatmentHistory(models.Model):
 
 class OtherMedicalIssueResponse(models.Model):
     reference_number = models.CharField(max_length=50)
-    # medical_issue = models.CharField(
-    #     max_length=10,
-    #     choices=[("Yes", "Yes"), ("No", "No"), ("Not Known", "Not Known")]
-    # )
-    medical_issue = models.BooleanField(default=False)
+    medical_issue = models.CharField(
+        max_length=10,
+        choices=[("Yes", "Yes"), ("No", "No"), ("Not Known", "Not Known")],
+    )
+    # medical_issue = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     other_medical_issues = models.BooleanField(default=True)
 
@@ -678,7 +678,8 @@ class CurrentMedicalTreatment(models.Model):
         ]
     )
 
-    prescribed_date = models.DateField()
+    # prescribed_date = models.DateField()
+    prescribed_date = models.CharField(max_length=50, null=True, blank=True)
     current_medical_treatment = models.BooleanField(default=True)
 
     def __str__(self):
