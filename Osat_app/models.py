@@ -79,7 +79,7 @@ class Participant(models.Model):
     surgery_history = models.BooleanField(default=False, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.reference_number} - {self.name}"
+        return f"{self.reference_number}"
 
 
 # class Firstscreening(models.Model):  # Class name should be PascalCase
