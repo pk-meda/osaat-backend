@@ -651,6 +651,7 @@ class FirstScreeningAPIView(APIView):
             participant.created_by = request.user
             participant.first_screening = True
             participant.save()
+            print("participant-----", participant)
 
             return Response(
                 {
@@ -1006,8 +1007,74 @@ class RefractionExaminationAPIView(generics.ListCreateAPIView):
         )
 
 
+# # class DiagnosisView(APIView):
 # class DiagnosisView(APIView):
+#     def post(self, request):
+#         reference_number = request.data.get("reference_number")
+
+#         if not reference_number:
+#             return Response(
+#                 {"message": "Reference number is required", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         obj, created = Diagnosis.objects.update_or_create(
+#             reference_number=reference_number, defaults=request.data
+#         )
+
+#         # ✅ Update Participant profile to reflect the diagnosis
+#         try:
+#             participant = Participant.objects.get(reference_number=reference_number)
+#             participant.diagnosis_management = True  # Set diagnosis to True
+#             participant.save()
+#         except Participant.DoesNotExist:
+#             pass  # If no participant exists, do nothing (or create if needed)
+
+#         return Response(
+#             {
+#                 "message": "Diagnosis saved successfully"
+#                 if created
+#                 else "Diagnosis updated successfully",
+#                 "error": False,
+#             },
+#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+#         )
+
+#     def get(self, request):
+#         """
+#         Retrieve a specific diagnosis record based on reference number.
+#         """
+#         reference_number = request.query_params.get("reference_number")
+
+#         if not reference_number:
+#             return Response(
+#                 {"message": "Reference number is required", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         try:
+#             diagnosis = Diagnosis.objects.get(reference_number=reference_number)
+#             serializer = DiagnosisSerializer(diagnosis)
+#             return Response(
+#                 {
+#                     "body": serializer.data,
+#                     "message": "Diagnosis record retrieved successfully",
+#                     "error": False,
+#                 },
+#                 status=status.HTTP_200_OK,
+#             )
+#         except Diagnosis.DoesNotExist:
+#             return Response(
+#                 {"message": "Diagnosis record not found", "error": True},
+#                 status=status.HTTP_404_NOT_FOUND,
+#             )
+
+
 class DiagnosisView(APIView):
+    """
+    Handles creation, update, and retrieval of Diagnosis records.
+    """
+
     def post(self, request):
         reference_number = request.data.get("reference_number")
 
@@ -1017,31 +1084,39 @@ class DiagnosisView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        obj, created = Diagnosis.objects.update_or_create(
-            reference_number=reference_number, defaults=request.data
-        )
-
-        # ✅ Update Participant profile to reflect the diagnosis
+        # Check if record exists → update else create
         try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.diagnosis_management = True  # Set diagnosis to True
-            participant.save()
-        except Participant.DoesNotExist:
-            pass  # If no participant exists, do nothing (or create if needed)
+            instance = Diagnosis.objects.get(reference_number=reference_number)
+            serializer = DiagnosisSerializer(instance, data=request.data, partial=True)
+        except Diagnosis.DoesNotExist:
+            serializer = DiagnosisSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+
+            # ✅ Update Participant status
+            Participant.objects.update_or_create(
+                reference_number=reference_number,
+                defaults={"diagnosis_management": True},
+            )
+
+            return Response(
+                {
+                    "message": "Diagnosis saved successfully",
+                    "error": False,
+                    "body": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         return Response(
-            {
-                "message": "Diagnosis saved successfully"
-                if created
-                else "Diagnosis updated successfully",
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            {"message": "Invalid data", "error": True, "errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     def get(self, request):
         """
-        Retrieve a specific diagnosis record based on reference number.
+        Retrieve a diagnosis record by reference_number.
         """
         reference_number = request.query_params.get("reference_number")
 
@@ -1056,9 +1131,9 @@ class DiagnosisView(APIView):
             serializer = DiagnosisSerializer(diagnosis)
             return Response(
                 {
-                    "body": serializer.data,
                     "message": "Diagnosis record retrieved successfully",
                     "error": False,
+                    "body": serializer.data,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -1475,55 +1550,161 @@ class OtherMedicalIssueResponseView(APIView):
         )
 
 
-# Family-History API
+# # Family-History API
+# class FamilyHistoryAPIView(APIView):
+#     def post(self, request):
+#         reference_number = request.data.get("reference_number")
+
+#         if not reference_number:
+#             return Response(
+#                 {
+#                     "body": [],
+#                     "message": "Failed to save Family History",
+#                     "error": True,
+#                     "errors": {"reference_number": ["This field is required."]},
+#                 },
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         obj, created = FamilyHistory.objects.update_or_create(
+#             reference_number=reference_number, defaults=request.data
+#         )
+
+#         try:
+#             participant = Participant.objects.get(reference_number=reference_number)
+#             participant.family_history = (
+#                 True  # Assuming you have this field in Participant model
+#             )
+#             participant.save()
+#         except Participant.DoesNotExist:
+#             pass
+
+#             # Formatting response in the required structure
+#         response_data = {
+#             "reference_number": obj.reference_number,
+#             "family_history": {
+#                 "Hypertension": obj.Hypertension,
+#                 "Diabetes": obj.Diabetes,
+#                 "Cataract": obj.Cataract,
+#                 "Glaucoma": obj.Glaucoma,
+#                 "Other_glasses": obj.Other_glasses,
+#                 "Other": obj.Other,
+#                 "none": obj.none,
+#             },
+#             "relationshipwithchild": obj.relationshipwithchild,
+#             "SerachTerm": obj.search_term if obj.search_term else "",
+#         }
+
+#         return Response(
+#             {
+#                 "body": response_data,
+#                 "message": "Family History saved successfully"
+#                 if created
+#                 else "Family History updated successfully",
+#                 "error": False,
+#             },
+#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+#         )
+
+#     def get(self, request):
+#         """Retrieve a specific Family History record based on reference number"""
+#         reference_number = request.GET.get(
+#             "reference_number"
+#         )  # Get reference_number from query params
+
+#         if not reference_number:
+#             return Response(
+#                 {"message": "Reference number is required", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         # Fetch the latest record for the given reference_number
+#         family_history = (
+#             FamilyHistory.objects.filter(reference_number=reference_number)
+#             .order_by("-id")
+#             .first()
+#         )
+
+#         if not family_history:
+#             return Response(
+#                 {"message": "Family History record not found", "error": True},
+#                 status=status.HTTP_404_NOT_FOUND,
+#             )
+
+#         # Formatting response in the required structure
+#         response_data = {
+#             "reference_number": family_history.reference_number,
+#             "family_history": {
+#                 "Hypertension": family_history.Hypertension,
+#                 "Diabetes": family_history.Diabetes,
+#                 "Cataract": family_history.Cataract,
+#                 "Glaucoma": family_history.Glaucoma,
+#                 "Other_glasses": family_history.Other_glasses,
+#                 "Other": family_history.Other,
+#                 "none": family_history.none,
+#             },
+#             "relationshipwithchild": family_history.relationshipwithchild,
+#             "SerachTerm": family_history.search_term
+#             if family_history.search_term
+#             else "",
+#         }
+
+#         return Response(
+#             {"body": response_data, "error": False}, status=status.HTTP_200_OK
+#         )
+
+
 class FamilyHistoryAPIView(APIView):
     def post(self, request):
         reference_number = request.data.get("reference_number")
 
         if not reference_number:
             return Response(
-                {
-                    "body": [],
-                    "message": "Failed to save Family History",
-                    "error": True,
-                    "errors": {"reference_number": ["This field is required."]},
-                },
+                {"message": "Reference number is required", "error": True},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        data = request.data.copy()
+
+        # ✅ Normalize all boolean fields: ensure True/False saved correctly
+        bool_fields = [
+            "Hypertension",
+            "Diabetes",
+            "Cataract",
+            "Glaucoma",
+            "Other_glasses",
+            "Other",
+            "none",
+        ]
+        for field in bool_fields:
+            value = data.get(field)
+            data[field] = str(value).lower() in ["true", "1", "yes"]
+
+            # ✅ if False, remove related relationship fields
+            if not data[field]:
+                rel_field = f"{field}_relationship"
+                if rel_field in data:
+                    data.pop(rel_field, None)
+
+        # ✅ Create or Update
         obj, created = FamilyHistory.objects.update_or_create(
-            reference_number=reference_number, defaults=request.data
+            reference_number=reference_number, defaults=data
         )
 
+        # ✅ Update Participant flag
         try:
             participant = Participant.objects.get(reference_number=reference_number)
-            participant.family_history = (
-                True  # Assuming you have this field in Participant model
-            )
+            participant.family_history = True
             participant.save()
         except Participant.DoesNotExist:
             pass
 
-            # Formatting response in the required structure
-        response_data = {
-            "reference_number": obj.reference_number,
-            "family_history": {
-                "Hypertension": obj.Hypertension,
-                "Diabetes": obj.Diabetes,
-                "Cataract": obj.Cataract,
-                "Glaucoma": obj.Glaucoma,
-                "Other_glasses": obj.Other_glasses,
-                "Other": obj.Other,
-                "none": obj.none,
-            },
-            "relationshipwithchild": obj.relationshipwithchild,
-            "SerachTerm": obj.search_term if obj.search_term else "",
-        }
+        serializer = FamilyHistorySerializer(obj)
 
         return Response(
             {
-                "body": response_data,
-                "message": "Family History saved successfully"
+                "body": serializer.data,
+                "message": "Family History created successfully"
                 if created
                 else "Family History updated successfully",
                 "error": False,
@@ -1532,50 +1713,25 @@ class FamilyHistoryAPIView(APIView):
         )
 
     def get(self, request):
-        """Retrieve a specific Family History record based on reference number"""
-        reference_number = request.GET.get(
-            "reference_number"
-        )  # Get reference_number from query params
-
+        reference_number = request.GET.get("reference_number")
         if not reference_number:
             return Response(
                 {"message": "Reference number is required", "error": True},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Fetch the latest record for the given reference_number
-        family_history = (
-            FamilyHistory.objects.filter(reference_number=reference_number)
-            .order_by("-id")
-            .first()
-        )
-
+        family_history = FamilyHistory.objects.filter(
+            reference_number=reference_number
+        ).first()
         if not family_history:
             return Response(
                 {"message": "Family History record not found", "error": True},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Formatting response in the required structure
-        response_data = {
-            "reference_number": family_history.reference_number,
-            "family_history": {
-                "Hypertension": family_history.Hypertension,
-                "Diabetes": family_history.Diabetes,
-                "Cataract": family_history.Cataract,
-                "Glaucoma": family_history.Glaucoma,
-                "Other_glasses": family_history.Other_glasses,
-                "Other": family_history.Other,
-                "none": family_history.none,
-            },
-            "relationshipwithchild": family_history.relationshipwithchild,
-            "SerachTerm": family_history.search_term
-            if family_history.search_term
-            else "",
-        }
-
+        serializer = FamilyHistorySerializer(family_history)
         return Response(
-            {"body": response_data, "error": False}, status=status.HTTP_200_OK
+            {"body": serializer.data, "error": False}, status=status.HTTP_200_OK
         )
 
 
@@ -1708,6 +1864,70 @@ class VisualAcuityMeasurementAPIView(APIView):
 
 
 # Refraction-Spectacle API
+# class RefractionSpectacleAPIView(APIView):
+#     def post(self, request):
+#         reference_number = request.data.get("reference_number")
+
+#         if not reference_number:
+#             return Response(
+#                 {"message": "Reference number is required", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         obj, created = RefractionSpectacle.objects.update_or_create(
+#             reference_number=reference_number, defaults=request.data
+#         )
+
+#         # Try updating Participant model if it exists
+#         try:
+#             participant = Participant.objects.get(reference_number=reference_number)
+#             participant.refraction_spectacle_presentation = (
+#                 True  # Assuming this field exists in Participant model
+#             )
+#             participant.save()
+#         except Participant.DoesNotExist:
+#             pass  # If Participant does not exist, do nothing
+
+#         return Response(
+#             {
+#                 "message": "RefractionSpectacle saved successfully"
+#                 if created
+#                 else "RefractionSpectacle updated successfully",
+#                 "error": False,
+#             },
+#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+#         )
+
+#     def get(self, request):
+#         """Retrieve Refraction Spectacle based on reference number"""
+#         reference_number = request.GET.get(
+#             "reference_number"
+#         )  # Get reference_number from query params
+
+#         if not reference_number:
+#             return Response(
+#                 {"message": "Reference number is required", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#         # Fetch the record, if it exists
+#         refraction_spectacle = get_object_or_404(
+#             RefractionSpectacle, reference_number=reference_number
+#         )
+
+#         # Serialize the response
+#         serializer = RefractionSpectacleSerializer(refraction_spectacle)
+
+#         return Response(
+#             {
+#                 "message": "Refraction Spectacle retrieved successfully",
+#                 "body": serializer.data,
+#                 "error": False,
+#             },
+#             status=status.HTTP_200_OK,
+#         )
+
+
 class RefractionSpectacleAPIView(APIView):
     def post(self, request):
         reference_number = request.data.get("reference_number")
@@ -1718,48 +1938,42 @@ class RefractionSpectacleAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Update or create record
         obj, created = RefractionSpectacle.objects.update_or_create(
-            reference_number=reference_number, defaults=request.data
+            reference_number=reference_number,
+            defaults=request.data,
         )
 
-        # Try updating Participant model if it exists
+        # ✅ Update Participant model if it exists
         try:
             participant = Participant.objects.get(reference_number=reference_number)
-            participant.refraction_spectacle_presentation = (
-                True  # Assuming this field exists in Participant model
-            )
+            participant.refraction_spectacle_presentation = True
             participant.save()
         except Participant.DoesNotExist:
-            pass  # If Participant does not exist, do nothing
+            pass
 
         return Response(
             {
-                "message": "RefractionSpectacle saved successfully"
+                "message": "Refraction Spectacle created successfully"
                 if created
-                else "RefractionSpectacle updated successfully",
+                else "Refraction Spectacle updated successfully",
                 "error": False,
             },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
     def get(self, request):
-        """Retrieve Refraction Spectacle based on reference number"""
-        reference_number = request.GET.get(
-            "reference_number"
-        )  # Get reference_number from query params
-
+        reference_number = request.GET.get("reference_number")
         if not reference_number:
             return Response(
                 {"message": "Reference number is required", "error": True},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Fetch the record, if it exists
         refraction_spectacle = get_object_or_404(
             RefractionSpectacle, reference_number=reference_number
         )
 
-        # Serialize the response
         serializer = RefractionSpectacleSerializer(refraction_spectacle)
 
         return Response(

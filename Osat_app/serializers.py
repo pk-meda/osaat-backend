@@ -1,3 +1,6 @@
+import ast
+import json
+
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
@@ -126,10 +129,42 @@ class RefractionExaminationSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+# class DiagnosisSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Diagnosis
+#         fields = "__all__"
+
+
 class DiagnosisSerializer(serializers.ModelSerializer):
     class Meta:
         model = Diagnosis
         fields = "__all__"
+
+    def validate_management_plan(self, value):
+        """
+        Ensure management_plan is always valid JSON (list or dict).
+        Convert if the frontend sends it as a string.
+        """
+        if isinstance(value, str):
+            try:
+                # Try literal_eval for "['A', 'B']" case
+                parsed = ast.literal_eval(value)
+                if isinstance(parsed, (list, dict)):
+                    return parsed
+            except Exception:
+                pass
+            try:
+                # Try JSON parse for '["A","B"]'
+                parsed = json.loads(value)
+                if isinstance(parsed, (list, dict)):
+                    return parsed
+            except Exception:
+                pass
+            # fallback
+            return [value]
+        elif isinstance(value, (list, dict)):
+            return value
+        return [str(value)]
 
 
 class ParticipantSerializer(serializers.ModelSerializer):

@@ -453,7 +453,7 @@ class Diagnosis(models.Model):
     refractive_error_type = models.CharField(max_length=100, null=True, blank=True)
     affected_eye = models.CharField(max_length=100, null=True, blank=True)
     ocular_condition = models.CharField(max_length=100, null=True, blank=True)
-    management_plan = models.CharField(max_length=100, null=True, blank=True)
+    management_plan = models.JSONField(default=list, blank=True)
     diagnosis_management = models.BooleanField(default=True)
 
     def __str__(self):
@@ -633,35 +633,60 @@ class OtherMedicalIssueResponse(models.Model):
         return f"{self.reference_number} - {self.medical_issue}"
 
 
+# class FamilyHistory(models.Model):
+#     reference_number = models.CharField(max_length=50, unique=True)
+
+#     # Boolean fields for each family history condition
+#     Hypertension = models.BooleanField(default=False)
+#     Diabetes = models.BooleanField(default=False)
+#     Cataract = models.BooleanField(default=False)
+#     Glaucoma = models.BooleanField(default=False)
+#     Other_glasses = models.BooleanField(
+#         default=False
+#     )  # Renamed to match "OtherGlasses"
+#     Other = models.BooleanField(default=False)
+#     none = models.BooleanField(default=False)
+
+#     relationshipwithchild = models.CharField(
+#         max_length=50,
+#         choices=[
+#             ("Grandfather", "Grandfather"),
+#             ("Grandmother", "Grandmother"),
+#             ("Father", "Father"),
+#             ("Mother", "Mother"),
+#             ("Sister", "Sister"),
+#             ("Brother", "Brother"),
+#         ],
+#     )
+
+#     search_term = models.CharField(
+#         max_length=100, blank=True, null=True
+#     )  # Fixed "SerachTerm" typo
+#     family_history = models.BooleanField(default=True)
+
+
+#     def __str__(self):
+#         return f"{self.reference_number} - Family History"
 class FamilyHistory(models.Model):
     reference_number = models.CharField(max_length=50, unique=True)
 
-    # Boolean fields for each family history condition
     Hypertension = models.BooleanField(default=False)
     Diabetes = models.BooleanField(default=False)
     Cataract = models.BooleanField(default=False)
     Glaucoma = models.BooleanField(default=False)
-    Other_glasses = models.BooleanField(
-        default=False
-    )  # Renamed to match "OtherGlasses"
+    Other_glasses = models.BooleanField(default=False)
     Other = models.BooleanField(default=False)
     none = models.BooleanField(default=False)
 
-    relationshipwithchild = models.CharField(
-        max_length=50,
-        choices=[
-            ("Grandfather", "Grandfather"),
-            ("Grandmother", "Grandmother"),
-            ("Father", "Father"),
-            ("Mother", "Mother"),
-            ("Sister", "Sister"),
-            ("Brother", "Brother"),
-        ],
-    )
+    Hypertension_relationship = models.JSONField(default=list, blank=True, null=True)
+    Diabetes_relationship = models.JSONField(default=list, blank=True, null=True)
+    Cataract_relationship = models.JSONField(default=list, blank=True, null=True)
+    Glaucoma_relationship = models.JSONField(default=list, blank=True, null=True)
+    Other_glasses_relationship = models.JSONField(default=list, blank=True, null=True)
+    Other_relationship = models.JSONField(default=list, blank=True, null=True)
 
-    search_term = models.CharField(
-        max_length=100, blank=True, null=True
-    )  # Fixed "SerachTerm" typo
+    Other_text = models.TextField(blank=True, null=True)
+    search_term = models.CharField(max_length=100, blank=True, null=True)
     family_history = models.BooleanField(default=True)
 
     def __str__(self):
@@ -1006,6 +1031,12 @@ class RefractionSpectacle(models.Model):
     axis_cylinder_le = models.CharField(
         max_length=50, choices=AXIS_CHOICES, blank=True, null=True
     )
+    refraction_spectacle_presentation = models.BooleanField(default=True)
+    aided_distance_va_re = models.CharField(max_length=20, blank=True, null=True)
+    aided_distance_va_le = models.CharField(max_length=20, blank=True, null=True)
+    aided_near_va_re = models.CharField(max_length=20, blank=True, null=True)
+    aided_near_va_le = models.CharField(max_length=20, blank=True, null=True)
+
     refraction_spectacle_presentation = models.BooleanField(default=True)
 
     def __str__(self):
