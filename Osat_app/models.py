@@ -152,6 +152,13 @@ class Participant(models.Model):
 
 
 class Firstscreening(models.Model):
+    participant = models.ForeignKey(
+        "Participant",
+        on_delete=models.CASCADE,
+        related_name="first_screenings",
+        null=True,
+        blank=True,
+    )
     grade = models.CharField(max_length=10, null=True, blank=True)
 
     gender = models.CharField(
@@ -209,6 +216,13 @@ class Firstscreening(models.Model):
     # contact_person = models.CharField(max_length=255, null=True, blank=True)
     # contact_details = models.CharField(max_length=100, null=True, blank=True)
     referral_clinic = models.CharField(max_length=255, null=True, blank=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="first_screenings",
+        null=True,
+        blank=True,
+    )
 
     def save(self, *args, **kwargs):
         if not self.reference_number:
@@ -273,6 +287,13 @@ class Comprehensive(models.Model):
 
 
 class SecondScreening(models.Model):
+    participant = models.ForeignKey(
+        "Participant",
+        on_delete=models.CASCADE,
+        related_name="second_screenings",
+        null=True,
+        blank=True,
+    )
     reference_number = models.CharField(
         max_length=100, unique=True, blank=True, null=True
     )
@@ -304,6 +325,13 @@ class SecondScreening(models.Model):
 
 
 class Dispensing(models.Model):
+    participant = models.ForeignKey(
+        "Participant",
+        on_delete=models.CASCADE,
+        related_name="dispensings",
+        null=True,
+        blank=True,
+    )
     reference_number = models.CharField(max_length=20)
     frame_choice = models.CharField(max_length=50, null=True, blank=True)
     # glasses_ordered = models.BooleanField(default=False)

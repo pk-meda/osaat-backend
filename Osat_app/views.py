@@ -464,158 +464,24 @@ class schoolView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # def post(self, request):
-    #     """
-    #     Create a school only if it doesn't exist.
-    #     """
-    #     school_name = request.data.get('school_name', '').strip()
-    #     contact_details = request.data.get('contact_details', '').strip()
-    #     address = request.data.get('address', '').strip()
 
-    #     if not school_name:
-    #         return Response({
-    #             "body": [],
-    #             "message": "School name is required.",
-    #             "error": True
-    #         }, status=status.HTTP_400_BAD_REQUEST)
-
-    #     # Check if school exists
-    #     if school.objects.filter(school_name__iexact=school_name).exists():
-    #         return Response({
-    #             "body": [],
-    #             "message": "This school already exists.",
-    #             "error": True
-    #         }, status=status.HTTP_200_OK)
-
-    #     # Create new school
-    #     data = {
-    #         'school_name': school_name,
-    #         'contact_details': contact_details,
-    #         'address': address
-    #     }
-    #     serializer = schoolSerializer(data=data)
-    #     if serializer.is_valid():
-    #         school_obj = serializer.save()
-    #         return Response({
-    #             "body": schoolSerializer(school_obj).data,
-    #             "message": "School created successfully.",
-    #             "error": False
-    #         }, status=status.HTTP_201_CREATED)
-
-    #     return Response({
-    #         "body": [],
-    #         "message": "Invalid data provided.",
-    #         "error": True
-    #     }, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class FirstScreeningAPIView(APIView):
-#     def get(self, request):
-#         """Retrieve all FirstScreening records."""
-#         screenings = Firstscreening.objects.all()
-#         serializer = FirstScreeningSerializer(screenings, many=True)
-#         return Response(
-#             {
-#                 "body": serializer.data,
-#                 "message": "Students retrieved successfully",
-#                 "error": False
-#             },
-#             status=status.HTTP_200_OK
-#         )
-#     def post(self, request):
-#         """Create a new FirstScreening record and update Participant."""
-#         serializer = FirstScreeningSerializer(data=request.data)
-
-#         if serializer.is_valid():
-#             first_screening_obj = serializer.save()
-
-#             # ✅ Update Participant profile based on reference_number
-#             reference_number = first_screening_obj.reference_number
-#             try:
-#                 participant = Participant.objects.get(reference_number=reference_number)
-#                 participant.first_screening = True  # Mark first_screening as True
-#                 participant.save()
-#             except Participant.DoesNotExist:
-#                 pass  # If participant does not exist, do nothing (or create one if needed)
-
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": "Student registered successfully",
-#                     "error": False
-#                 },
-#                 status=status.HTTP_201_CREATED
-#             )
-
-#         return Response(
-#             {
-#                 "body": {},
-#                 "message": "Validation failed",
-#                 "error": True,
-#                 "errors": serializer.errors  # ✅ Include validation errors for debugging
-#             },
-#             status=status.HTTP_400_BAD_REQUEST
-#         )
-
-# class FirstScreeningAPIView(APIView):
-#     def get(self, request):
-#         screenings = Firstscreening.objects.all()
-#         serializer = FirstScreeningSerializer(screenings, many=True)
-#         return Response(
-#             {
-#                 "body": serializer.data,
-#                 "message": "Students retrieved successfully",
-#                 "error": False
-#             },
-#             status=status.HTTP_200_OK
-#         )
-
-#     def post(self, request):
-#         serializer = FirstScreeningSerializer(data=request.data)
-
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": "Student registered successfully",
-#                     "error": False
-#                 },
-#                 status=status.HTTP_201_CREATED
-#             )
-
-#         return Response(
-#             {
-#                 "body": {},
-#                 "message": "Validation failed",
-#                 "error": True,
-#                 "errors": serializer.errors
-#             },
-#             status=status.HTTP_400_BAD_REQUEST
-#         )
-
-# sahithi's code
 # class FirstScreeningAPIView(APIView):
 #     authentication_classes = [TokenAuthentication]
 #     permission_classes = [IsAuthenticated]
 
-#     def get(self, request):
-#         screenings = Firstscreening.objects.all()
-#         serializer = FirstScreeningSerializer(screenings, many=True)
-#         return Response(
-#             {
-#                 "body": serializer.data,
-#                 "message": "Students retrieved successfully",
-#                 "error": False,
-#             },
-#             status=status.HTTP_200_OK,
-#         )
-
 #     def post(self, request):
 #         serializer = FirstScreeningSerializer(data=request.data)
-
 #         if serializer.is_valid():
-#             serializer.save()
+#             first_screening = serializer.save()
+
+#             participant, created = Participant.objects.get_or_create(
+#                 reference_number=first_screening.reference_number
+#             )
+#             participant.created_by = request.user
+#             participant.first_screening = True
+#             participant.save()
+#             print("participant-----", participant)
+
 #             return Response(
 #                 {
 #                     "body": serializer.data,
@@ -643,20 +509,19 @@ class FirstScreeningAPIView(APIView):
     def post(self, request):
         serializer = FirstScreeningSerializer(data=request.data)
         if serializer.is_valid():
-            first_screening = serializer.save()
+            first_screening = serializer.save(created_by=request.user)
 
-            participant, created = Participant.objects.get_or_create(
+            participant, _ = Participant.objects.get_or_create(
                 reference_number=first_screening.reference_number
             )
             participant.created_by = request.user
             participant.first_screening = True
             participant.save()
-            print("participant-----", participant)
 
             return Response(
                 {
                     "body": serializer.data,
-                    "message": "Student registered successfully",
+                    "message": "Student registered successfully.",
                     "error": False,
                 },
                 status=status.HTTP_201_CREATED,
@@ -664,10 +529,9 @@ class FirstScreeningAPIView(APIView):
 
         return Response(
             {
-                "body": {},
-                "message": "Validation failed",
+                "body": serializer.errors,
+                "message": "Validation failed.",
                 "error": True,
-                "errors": serializer.errors,
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -714,62 +578,215 @@ class ComprehensiveAPIView(APIView):
 
 
 # class SecondscreeningAPIView(APIView):
-#     def get(self, request):
-#         """Retrieve all SecondScreening records."""
-#         records = SecondScreening.objects.all()
-#         serializer = SecondscreeningSerializer(records, many=True)
-#         return Response(
-#             {
-#                 "body": serializer.data,
-#                 "message": "Records retrieved successfully",
-#                 "error": False
-#             },
-#             status=status.HTTP_200_OK
-#         )
-#     def post(self, request):
-#         """Create or update SecondScreening record."""
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     parser_classes = (MultiPartParser, FormParser)
+
+#     def get(self, request, *args, **kwargs):
+#         reference_number = request.query_params.get("reference_number")
+
+#         if reference_number:
+#             screenings = SecondScreening.objects.filter(
+#                 reference_number=reference_number, created_by=request.user
+#             )
+#         else:
+#             screenings = SecondScreening.objects.filter(created_by=request.user)
+
+#         serializer = SecondscreeningSerializer(screenings, many=True)
+
+#         if serializer.data:
+#             return Response(
+#                 {
+#                     "body": serializer.data,
+#                     "message": "Data fetched successfully",
+#                     "error": False,
+#                 },
+#                 status=status.HTTP_200_OK,
+#             )
+#         else:
+#             return Response(
+#                 {
+#                     "body": [],
+#                     "message": "No records found",
+#                     "error": True,
+#                 },
+#                 status=status.HTTP_404_NOT_FOUND,
+#             )
+
+#     def post(self, request, *args, **kwargs):
 #         reference_number = request.data.get("reference_number")
 
 #         if not reference_number:
-#             return Response({"error": "Reference number is required"}, status=status.HTTP_400_BAD_REQUEST)
+#             return Response(
+#                 {"body": {}, "message": "Reference number is required", "error": True},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
 
-#         # ✅ Check if a record exists, update instead of creating a new one
-#         screening, created = SecondScreening.objects.update_or_create(
-#             reference_number=reference_number,
-#             defaults=request.data  # Update all fields
+#         instance = SecondScreening.objects.filter(
+#             reference_number=reference_number
+#         ).first()
+
+#         serializer = SecondscreeningSerializer(
+#             instance, data=request.data, partial=True
 #         )
 
-#         serializer = SecondscreeningSerializer(screening)
+#         if serializer.is_valid():
+#             second_screening = serializer.save(created_by=request.user)
 
+#             participant, _ = Participant.objects.get_or_create(
+#                 reference_number=second_screening.reference_number
+#             )
+#             participant.created_by = request.user
+#             participant.second_screening = True
+#             participant.save()
+
+#             return Response(
+#                 {
+#                     "body": serializer.data,
+#                     "message": "Details updated successfully"
+#                     if instance
+#                     else "Details created successfully",
+#                     "error": False,
+#                 },
+#                 status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED,
+#             )
+
+#         first_error = next(iter(serializer.errors.values()))[0]
 #         return Response(
 #             {
-#                 "body": serializer.data,
-#                 "message": "Second screening details saved successfully",
-#                 "error": False
+#                 "body": {},
+#                 "message": f"Validation failed - {first_error}",
+#                 "error": True,
 #             },
-#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+#             status=status.HTTP_400_BAD_REQUEST,
 #         )
 
-# sahithi's code
+
 # class SecondscreeningAPIView(APIView):
 #     authentication_classes = [TokenAuthentication]
 #     permission_classes = [IsAuthenticated]
 #     parser_classes = (MultiPartParser, FormParser)
 
-#     def post(self, request, *args, **kwargs):
-#         serializer = SecondscreeningSerializer(data=request.data)
-#         if serializer.is_valid():
-#             instance = serializer.save()
-#             response_serializer = SecondscreeningSerializer(instance)
+#     def get(self, request, *args, **kwargs):
+#         """
+#         Get all second screening records or filter by reference number.
+#         """
+#         reference_number = request.query_params.get("reference_number")
+
+#         if reference_number:
+#             screenings = SecondScreening.objects.filter(
+#                 reference_number=reference_number, created_by=request.user
+#             )
+#         else:
+#             screenings = SecondScreening.objects.filter(created_by=request.user)
+
+#         serializer = SecondscreeningSerializer(screenings, many=True)
+
+#         if screenings.exists():
 #             return Response(
 #                 {
-#                     "body": response_serializer.data,
-#                     "message": "Details updated successfully.",
+#                     "body": serializer.data,
+#                     "message": "Data fetched successfully",
 #                     "error": False,
-#                 }
+#                 },
+#                 status=status.HTTP_200_OK,
 #             )
+#         else:
+#             return Response(
+#                 {
+#                     "body": [],
+#                     "message": "No records found",
+#                     "error": True,
+#                 },
+#                 status=status.HTTP_404_NOT_FOUND,
+#             )
+
+#     def post(self, request, *args, **kwargs):
+#         """
+#         Create or update a Second Screening record.
+#         If ID is present → update that record (do not create a new one).
+#         If reference_number changes → delete the old record with the old reference_number.
+#         """
+#         second_screening_id = request.data.get("id", None)
+#         new_ref_number = request.data.get("reference_number", "").strip()
+#         old_ref_number = request.data.get("old_reference_number", "").strip()
+#         print("old ref number:--->>", old_ref_number)
+#         instance = None
+#         # old_ref_number = None
+
+#         # ✅ Try to fetch the record by ID if provided
+#         if second_screening_id not in [None, "", "null"]:
+#             try:
+#                 instance = SecondScreening.objects.get(id=int(second_screening_id))
+#                 # old_ref_number = instance.reference_number
+#             except (SecondScreening.DoesNotExist, ValueError, TypeError):
+#                 instance = None
+
+#         # ✅ Prevent duplicate reference number (excluding current instance)
+#         if new_ref_number:
+#             existing = SecondScreening.objects.filter(reference_number=new_ref_number)
+#             if instance:
+#                 existing = existing.exclude(id=instance.id)
+#             if existing.exists():
+#                 return Response(
+#                     {
+#                         "body": {},
+#                         "message": "This reference number already exists. Please use a unique one.",
+#                         "error": True,
+#                     },
+#                     status=status.HTTP_400_BAD_REQUEST,
+#                 )
+
+#         # ✅ Save (create or update)
+#         serializer = SecondscreeningSerializer(
+#             instance, data=request.data, partial=True
+#         )
+#         if serializer.is_valid():
+#             second_screening = serializer.save(created_by=request.user)
+#             print("done")
+#             print("old ref number:", old_ref_number)
+#             print("new ref number:", new_ref_number)
+
+#             # ✅ If the reference number has changed → delete the old record
+#             if old_ref_number and old_ref_number != new_ref_number:
+#                 SecondScreening.objects.filter(reference_number=old_ref_number).exclude(
+#                     id=second_screening.id
+#                 ).delete()
+#                 # Optional: also delete old participant with old reference
+#                 print("deleting old reference number participant:", old_ref_number)
+#                 Participant.objects.filter(reference_number=old_ref_number).delete()
+#                 print("deleted old reference number:", old_ref_number)
+
+#             # ✅ Sync with Participant (for new reference)
+#             participant, _ = Participant.objects.get_or_create(
+#                 reference_number=second_screening.reference_number
+#             )
+#             participant.created_by = request.user
+#             participant.second_screening = True
+#             participant.save()
+
+#             return Response(
+#                 {
+#                     "body": serializer.data,
+#                     "message": (
+#                         "Details updated successfully"
+#                         if instance
+#                         else "Record created successfully"
+#                     ),
+#                     "error": False,
+#                 },
+#                 status=status.HTTP_200_OK,
+#             )
+
+
+#         first_error = next(iter(serializer.errors.values()))[0]
 #         return Response(
-#             {"body": {}, "message": "Invalid data provided.", "error": True}, status=400
+#             {
+#                 "body": {},
+#                 "message": f"Validation failed - {first_error}",
+#                 "error": True,
+#             },
+#             status=status.HTTP_400_BAD_REQUEST,
 #         )
 
 
@@ -779,6 +796,9 @@ class SecondscreeningAPIView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, *args, **kwargs):
+        """
+        Get all second screening records or filter by reference number.
+        """
         reference_number = request.query_params.get("reference_number")
 
         if reference_number:
@@ -790,7 +810,7 @@ class SecondscreeningAPIView(APIView):
 
         serializer = SecondscreeningSerializer(screenings, many=True)
 
-        if serializer.data:
+        if screenings.exists():
             return Response(
                 {
                     "body": serializer.data,
@@ -810,25 +830,58 @@ class SecondscreeningAPIView(APIView):
             )
 
     def post(self, request, *args, **kwargs):
-        reference_number = request.data.get("reference_number")
+        """
+        Create or update a Second Screening record.
+        - If ID is present → update the existing record (don’t create a new one)
+        - If reference_number changes → delete the old record & participant
+        """
+        second_screening_id = request.data.get("id")
+        new_ref_number = request.data.get("reference_number", "").strip()
+        instance = None
+        old_ref_number = None
 
-        if not reference_number:
-            return Response(
-                {"body": {}, "message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # ✅ Fetch the instance if ID is provided (auto-detect old reference number)
+        if second_screening_id not in [None, "", "null"]:
+            try:
+                instance = SecondScreening.objects.get(id=int(second_screening_id))
+                old_ref_number = instance.reference_number  # auto-detect old ref
+            except (SecondScreening.DoesNotExist, ValueError, TypeError):
+                instance = None
 
-        instance = SecondScreening.objects.filter(
-            reference_number=reference_number
-        ).first()
+        print(f"🔹 Old Reference Number: {old_ref_number}")
+        print(f"🔹 New Reference Number: {new_ref_number}")
 
+        # ✅ Prevent duplicate reference numbers (excluding current record)
+        if new_ref_number:
+            existing = SecondScreening.objects.filter(reference_number=new_ref_number)
+            if instance:
+                existing = existing.exclude(id=instance.id)
+            if existing.exists():
+                return Response(
+                    {
+                        "body": {},
+                        "message": "This reference number already exists. Please use a unique one.",
+                        "error": True,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # ✅ Validate and save (create or update)
         serializer = SecondscreeningSerializer(
             instance, data=request.data, partial=True
         )
-
         if serializer.is_valid():
             second_screening = serializer.save(created_by=request.user)
 
+            # ✅ If the reference number changed → delete old records
+            if old_ref_number and old_ref_number != new_ref_number:
+                print(f"🗑️ Deleting old record with reference_number={old_ref_number}")
+                SecondScreening.objects.filter(reference_number=old_ref_number).exclude(
+                    id=second_screening.id
+                ).delete()
+                Participant.objects.filter(reference_number=old_ref_number).delete()
+
+            # ✅ Sync with Participant (new reference)
             participant, _ = Participant.objects.get_or_create(
                 reference_number=second_screening.reference_number
             )
@@ -839,14 +892,17 @@ class SecondscreeningAPIView(APIView):
             return Response(
                 {
                     "body": serializer.data,
-                    "message": "Details updated successfully"
-                    if instance
-                    else "Details created successfully",
+                    "message": (
+                        "Record updated successfully"
+                        if instance
+                        else "Record created successfully"
+                    ),
                     "error": False,
                 },
-                status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
             )
 
+        # ❌ Handle validation errors
         first_error = next(iter(serializer.errors.values()))[0]
         return Response(
             {
@@ -2260,39 +2316,85 @@ class AliExpressProductSearchAPIView(APIView):
 
 
 # get all participants registered by the logged in user
+# class UserParticipantsAPIView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         user_refs = Participant.objects.filter(created_by=request.user).values_list(
+#             "reference_number", flat=True
+#         )
+
+#         print("User Reference Numbers:", list(user_refs))
+
+#         combined_data = []
+
+#         for ref in user_refs:
+#             # merged_obj = {"reference_number": ref}
+#             merged_obj = {}
+
+#             # FirstScreening
+#             first = Firstscreening.objects.filter(reference_number=ref).first()
+#             if first:
+#                 merged_obj.update(FirstScreeningSerializer(first).data)
+
+#             # SecondScreening
+#             second = SecondScreening.objects.filter(reference_number=ref).first()
+
+#             if second:
+#                 merged_obj.update(SecondscreeningSerializer(second).data)
+
+#             # Dispensing (latest)
+#             dispensing = (
+#                 Dispensing.objects.filter(reference_number=ref).order_by("-id").first()
+#             )
+
+#             if dispensing:
+#                 print("done dispensing-->>>")
+#                 merged_obj.update(DispensingSerializer(dispensing).data)
+
+#             if merged_obj:
+#                 print("merged_obj-->>>", merged_obj)
+
+#                 combined_data.append(merged_obj)
+
+#         return Response(
+#             {
+#                 "body": combined_data,
+#                 "message": "All participants retrieved successfully.",
+#                 "error": False,
+#             },
+#             status=status.HTTP_200_OK,
+#         )
+
+
 class UserParticipantsAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # current user ke saare reference_numbers
         user_refs = Participant.objects.filter(created_by=request.user).values_list(
             "reference_number", flat=True
         )
 
         combined_data = []
-
         for ref in user_refs:
-            merged_obj = {"reference_number": ref}
-
-            # FirstScreening
+            merged = {}
             first = Firstscreening.objects.filter(reference_number=ref).first()
-            if first:
-                merged_obj.update(FirstScreeningSerializer(first).data)
-
-            # SecondScreening
             second = SecondScreening.objects.filter(reference_number=ref).first()
-            if second:
-                merged_obj.update(SecondscreeningSerializer(second).data)
-
-            # Dispensing (latest)
             dispensing = (
                 Dispensing.objects.filter(reference_number=ref).order_by("-id").first()
             )
-            if dispensing:
-                merged_obj.update(DispensingSerializer(dispensing).data)
 
-            combined_data.append(merged_obj)
+            if first:
+                merged.update(FirstScreeningSerializer(first).data)
+            if second:
+                merged.update(SecondscreeningSerializer(second).data)
+            if dispensing:
+                merged.update(DispensingSerializer(dispensing).data)
+
+            if merged:
+                combined_data.append(merged)
 
         return Response(
             {
