@@ -358,6 +358,13 @@ class Dispensing(models.Model):
 
 
 class InitialEyeTest(models.Model):
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name="initial_tests",
+        null=True,
+        blank=True,
+    )
     TEST_RESULTS = [("pass", "Pass"), ("fail", "Fail")]
 
     reference_number = models.CharField(max_length=50, unique=True)
@@ -371,6 +378,13 @@ class InitialEyeTest(models.Model):
 
 
 class RetestEyeTest(models.Model):
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name="retests",
+        null=True,
+        blank=True,
+    )
     TEST_RESULTS = [("pass", "Pass"), ("fail", "Fail")]
 
     reference_number = models.CharField(max_length=50, unique=True)
@@ -382,6 +396,13 @@ class RetestEyeTest(models.Model):
 
 
 class ComprehensiveEyeTest(models.Model):
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name="comprehensive_tests",
+        null=True,
+        blank=True,
+    )
     TEST_RESULTS = [("pass", "Pass"), ("fail", "Fail")]
 
     reference_number = models.CharField(max_length=50, unique=True)
@@ -474,6 +495,13 @@ class RefractionExamination(models.Model):
 
 
 class Diagnosis(models.Model):
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name="diagnoses",
+        null=True,
+        blank=True,
+    )
     reference_number = models.CharField(max_length=50, unique=True)
     # follow_up_required = models.BooleanField(default=False)
     # follow_up_date = models.DateField(null=True, blank=True)
@@ -489,6 +517,13 @@ class Diagnosis(models.Model):
 
 
 class SpectacleHistory(models.Model):
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name="surgery_treatments",
+        null=True,
+        blank=True,
+    )
     reference_number = models.CharField(max_length=50, primary_key=True)
 
     wears_spectacles = models.BooleanField(null=True, blank=True)
@@ -696,6 +731,13 @@ class OtherMedicalIssueResponse(models.Model):
 #     def __str__(self):
 #         return f"{self.reference_number} - Family History"
 class FamilyHistory(models.Model):
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name="family_histories",
+        null=True,
+        blank=True,
+    )
     reference_number = models.CharField(max_length=50, unique=True)
 
     Hypertension = models.BooleanField(default=False)
@@ -819,6 +861,13 @@ VISUAL_ACUITY_NEAR_CHOICES = [
 
 
 class VisualAcuityMeasurement(models.Model):
+    participant = models.ForeignKey(
+        Participant,
+        on_delete=models.CASCADE,
+        related_name="visual_acuities",
+        null=True,
+        blank=True,
+    )
     reference_number = models.CharField(max_length=100, unique=True)
     unaided_distance_va_re = models.CharField(
         max_length=50, choices=VISUAL_ACUITY_DISTANCE_CHOICES, blank=True, null=True
