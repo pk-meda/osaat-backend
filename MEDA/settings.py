@@ -87,6 +87,7 @@ CORS_ORIGIN_WHITELIST = (
     "http://localhost:8102",
     "http://localhost:52380",
     "https://osaatapi.trickywebsolutions.com",
+    "https://osaat-api-fwccdeftescfb9dk.southafricanorth-01.azurewebsites.net",
 )
 
 CORS_ALLOW_CREDENTIALS = True
