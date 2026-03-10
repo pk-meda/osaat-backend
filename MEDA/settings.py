@@ -111,9 +111,16 @@ CORS_ALLOW_METHODS = [
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres', # Or the specific DB name you created
+        'USER': 'medadbadmin',
+        'PASSWORD': 'RbuY<Mv%9?',
+        'HOST': 'meda-db-server.postgres.database.azure.com',
+        'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
 }
 
@@ -187,7 +194,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 
 # frontend url
-FRONTEND_URL = "http://localhost:8100"
+FRONTEND_URL = "https://victorious-rock-01bf2c21e.4.azurestaticapps.net"
 
 ##Email send
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
