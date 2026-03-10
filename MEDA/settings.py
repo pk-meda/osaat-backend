@@ -77,7 +77,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "MEDA.wsgi.application"
 
 CORS_ORIGIN_ALLOW_ALL = False
-CORS_ORIGIN_WHITELIST = (
+# The modern setting name (Recommended for Django 4.0+)
+CORS_ALLOWED_ORIGINS = [
     "http://localhost:8100",
     "http://localhost:8101",
     "http://localhost",
@@ -88,7 +89,11 @@ CORS_ORIGIN_WHITELIST = (
     "http://localhost:52380",
     "https://osaatapi.trickywebsolutions.com",
     "https://osaat-api-fwccdeftescfb9dk.southafricanorth-01.azurewebsites.net",
-)
+    "https://victorious-rock-01bf2c21e.4.azurestaticapps.net",
+]
+
+# The legacy setting name (Keep this for backward compatibility)
+CORS_ORIGIN_WHITELIST = tuple(CORS_ALLOWED_ORIGINS)
 
 CORS_ALLOW_CREDENTIALS = True
 
