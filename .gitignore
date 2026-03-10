@@ -3,5 +3,6 @@ media
 meda_env
 venv
 .venv
+venv_win
 *.zip
 __pycache__
