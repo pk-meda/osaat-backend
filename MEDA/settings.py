@@ -79,6 +79,7 @@ WSGI_APPLICATION = "MEDA.wsgi.application"
 CORS_ORIGIN_ALLOW_ALL = False
 # The modern setting name (Recommended for Django 4.0+)
 CORS_ALLOWED_ORIGINS = [
+    "https://osaat.aei.org.za",  # <--- ADD THIS LINE
     "http://localhost:8100",
     "http://localhost:8101",
     "http://localhost",
@@ -206,5 +207,5 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "pappukumar.tws@gmail.com"
-EMAIL_HOST_PASSWORD = "lqdl gbdk oywk oncc"
+EMAIL_HOST_USER = "admin@scholrs.com" ##"pappukumar.tws@gmail.com"
+EMAIL_HOST_PASSWORD = "bsnz mioz gxjq omea"
