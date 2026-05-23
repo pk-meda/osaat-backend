@@ -98,10 +98,10 @@ CORS_ORIGIN_WHITELIST = tuple(CORS_ALLOWED_ORIGINS)
 
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_HEADERS = [
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
-    "content-type",
-    "x-requested-with",
 ]
 
 CORS_ALLOW_METHODS = [
