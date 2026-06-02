@@ -209,3 +209,10 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "admin@scholrs.com" ##"pappukumar.tws@gmail.com"
 EMAIL_HOST_PASSWORD = "bsnz mioz gxjq omea"
+
+#EMAIL_HOST = "mail.privateemail.com"
+#EMAIL_PORT = 587
+#EMAIL_USE_TLS = True
+#EMAIL_HOST_USER = "info@osaat.vision"
+#EMAIL_HOST_PASSWORD = "YOUR_EMAIL_PASSWORD"
+
