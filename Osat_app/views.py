@@ -5,6 +5,7 @@ import string
 import uuid
 from datetime import timedelta
 from uuid import uuid4
+import csv
 
 import openpyxl
 from django.conf import settings
@@ -18,6 +19,7 @@ from django.core.mail import send_mail
 from django.core.serializers import serialize
 from django.db.models import Q
 from django.http import JsonResponse
+from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -35,8 +37,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
 from .models import (
     Comprehensive,
+    ComprehensiveEyeTest,
     Country,
     CurrentMedicalTreatment,
     Diagnosis,
@@ -57,6 +61,7 @@ from .models import (
 )
 from .serializers import (
     ComprehensiveSerializer,
+    ComprehensiveEyeTestSerializer,
     CurrentMedicalSerializer,
     DiagnosisSerializer,
     DispensingSerializer,
@@ -576,6 +581,184 @@ class ComprehensiveAPIView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+class ComprehensiveEyeTestAPIView(APIView):
+    def get(self, request):
+        """Retrieve all Comprehensive Eye Test records."""
+        records = ComprehensiveEyeTest.objects.all()
+        serializer = ComprehensiveEyeTestSerializer(records, many=True)
+        return Response(
+            {
+                "body": serializer.data,
+                "message": "Eye test records retrieved successfully",
+                "error": False,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request):
+        """Create or update a Comprehensive Eye Test record."""
+        reference_number = request.data.get("reference_number")
+        if not reference_number:
+            return Response(
+                {"message": "Reference number is required", "error": True},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 1. Get all valid field names on the ComprehensiveEyeTest model
+        # This keeps the request clean and prevents unexpected DB crashes from extra payload keys
+        model_fields = {f.name for f in ComprehensiveEyeTest._meta.get_fields()}
+        
+        # 2. Build safe defaults containing only existing fields
+        safe_defaults = {
+            key: value for key, value in request.data.items()
+            if key in model_fields and key != 'reference_number'
+        }
+
+        # 3. Safely update or create the record
+        obj, created = ComprehensiveEyeTest.objects.update_or_create(
+            reference_number=reference_number,
+            defaults=safe_defaults,
+        )
+
+        # 4. Sync with Participant model if you track its overall status
+        try:
+            participant = Participant.objects.get(reference_number=reference_number)
+            participant.comprehensive_eye_test = True  
+            participant.save()
+        except Participant.DoesNotExist:
+            pass
+
+        serializer = ComprehensiveEyeTestSerializer(obj)
+        return Response(
+            {
+                "body": serializer.data,
+                "message": "Eye test saved successfully" if created else "Eye test updated successfully",
+                "error": False,
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class Echo:
+    """An object that implements just the write method of the file-like
+    interface and returns the string itself to stream performance data.
+    """
+    def write(self, value):
+        return value
+
+
+class SpecOrderReportView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        school_filter = request.query_params.get('school', None)
+
+        participants = Participant.objects.all()
+
+        if school_filter and school_filter.strip():
+            clean_school = school_filter.strip()
+
+            # 1. Collect reference numbers from FirstScreening matching the school name
+            fs_ref_numbers = Firstscreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+
+            # 2. Collect reference numbers from SecondScreening matching the school name
+            ss_ref_numbers = SecondScreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+
+            # 3. Combine both sets of reference numbers
+            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
+
+            # 4. Filter participants by these reference numbers
+            participants = participants.filter(reference_number__in=matching_ref_numbers)
+
+        headers = [
+            'Reference Number', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade',
+            'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)',
+            'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)',
+            'Frame Choice', 'Lenses Type', 'PD Distance', 'Comments'
+        ]
+
+        def stream_rows():
+            # Write CSV header row
+            writer = csv.writer(Echo())
+            yield writer.writerow(headers)
+
+            for p in participants.iterator():
+                ref_num = str(p.reference_number).strip() if p.reference_number else ''
+
+                # 1. First Screening lookup
+                fs = (
+                    (hasattr(p, 'first_screenings') and p.first_screenings.first()) or
+                    Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
+                )
+
+                # 2. Second Screening lookup
+                ss = (
+                    (hasattr(p, 'second_screenings') and p.second_screenings.first()) or
+                    SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
+                )
+
+                # 3. Refraction Examination lookup
+                refraction = RefractionExamination.objects.filter(
+                    reference_number__iexact=ref_num
+                ).first()
+
+                # 4. Robust Dispensing lookup:
+                #    - Checks reverse FK relation 'p.dispensings'
+                #    - Checks direct FK relation 'participant=p'
+                #    - Checks stripped case-insensitive reference_number match
+                dispensing = (
+                    (hasattr(p, 'dispensings') and p.dispensings.order_by('-id').first()) or
+                    Dispensing.objects.filter(participant=p).order_by('-id').first() or
+                    Dispensing.objects.filter(reference_number__iexact=ref_num).order_by('-id').first()
+                )
+
+                # Safely extract participant & screening fields
+                name = ss.name if ss and ss.name else ""
+                surname = ss.surname if ss and ss.surname else ""
+                age = fs.age if fs and fs.age is not None else ""
+                gender = fs.gender if fs and fs.gender else ""
+                school_name = (
+                    (ss.school if ss and ss.school else None) or 
+                    (fs.school if fs and fs.school else "")
+                )
+                grade = fs.grade if fs and fs.grade else ""
+
+                # Extract dispensing fields safely
+                frame_choice = dispensing.frame_choice if dispensing and dispensing.frame_choice else ""
+                lenses_type = dispensing.lenses_type if dispensing and dispensing.lenses_type else ""
+                pd_distance = dispensing.pd_distance if dispensing and dispensing.pd_distance else ""
+                comments = dispensing.comments if dispensing and dispensing.comments else ""
+
+                row = [
+                    ref_num,
+                    name,
+                    surname,
+                    age,
+                    gender,
+                    school_name,
+                    grade,
+                    refraction.sph_RE_final if refraction and refraction.sph_RE_final else "",
+                    refraction.cyl_RE_final if refraction and refraction.cyl_RE_final else "",
+                    refraction.axis_RE_final if refraction and refraction.axis_RE_final else "",
+                    refraction.sph_LE_final if refraction and refraction.sph_LE_final else "",
+                    refraction.cyl_LE_final if refraction and refraction.cyl_LE_final else "",
+                    refraction.axis_LE_final if refraction and refraction.axis_LE_final else "",
+                    frame_choice,
+                    lenses_type,
+                    pd_distance,
+                    comments
+                ]
+
+                yield writer.writerow(row)
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="spec_order_sheet.csv"'
+        return response
 
 # class SecondscreeningAPIView(APIView):
 #     authentication_classes = [TokenAuthentication]
@@ -916,23 +1099,71 @@ class SecondscreeningAPIView(APIView):
 
 # Dispensing API
 class DispensingAPIView(APIView):
+
+    def get(self, request):
+        """
+        Retrieve the latest dispensing record based on reference number.
+        If no record exists yet, return empty defaults with HTTP 200 to allow creation.
+        """
+        reference_number = request.GET.get("reference_number")
+
+        if not reference_number:
+            return Response(
+                {"message": "Reference number is required", "error": True},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Clean string whitespace
+        reference_number = reference_number.strip()
+
+        latest_dispensing_record = (
+            Dispensing.objects.filter(reference_number__iexact=reference_number)
+            .order_by("-id")
+            .first()
+        )
+
+        # If no record exists, return an empty payload instead of a 404 error
+        if not latest_dispensing_record:
+            return Response(
+                {
+                    "body": {
+                        "reference_number": reference_number,
+                        "frame_choice": "",
+                        "lenses_type": "",
+                        "pd_distance": "",
+                        "comments": ""
+                    },
+                    "message": "No previous dispensing record found. Ready for new submission.",
+                    "error": False,
+                    "is_new": True
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        serializer = DispensingSerializer(latest_dispensing_record)
+        return Response(
+            {"body": serializer.data, "error": False, "is_new": False}, 
+            status=status.HTTP_200_OK
+        )
+
     def post(self, request):
         """
-        Save dispensing details.
+        Save or update dispensing details.
         """
-        serializer = DispensingSerializer(data=request.data)
+        data = request.data.copy()
+        
+        # Ensure reference_number whitespace is stripped if present
+        if 'reference_number' in data and isinstance(data['reference_number'], str):
+            data['reference_number'] = data['reference_number'].strip()
+
+        serializer = DispensingSerializer(data=data)
 
         if serializer.is_valid():
             dispensing_obj = serializer.save()
 
-            # ✅ Update Participant profile based on reference_number
+            # Update Participant status
             reference_number = dispensing_obj.reference_number
-            try:
-                participant = Participant.objects.get(reference_number=reference_number)
-                participant.dispensing = True  # Set dispensing to True
-                participant.save()
-            except Participant.DoesNotExist:
-                pass  # If no participant exists, do nothing (or you can create one if needed)
+            Participant.objects.filter(reference_number__iexact=reference_number).update(dispensing=True)
 
             return Response(
                 {
@@ -951,43 +1182,6 @@ class DispensingAPIView(APIView):
                 "errors": serializer.errors,
             },
             status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    def get(self, request):
-        """
-        Retrieve the latest dispensing record based on reference number.
-        """
-        reference_number = request.GET.get(
-            "reference_number"
-        )  # Get reference_number from query params
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        latest_dispensing_record = (
-            Dispensing.objects.filter(reference_number=reference_number)
-            .order_by("-id")
-            .first()
-        )  # Get latest record
-
-        if not latest_dispensing_record:
-            return Response(
-                {
-                    "message": "No dispensing records found for the given reference number",
-                    "error": True,
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        serializer = DispensingSerializer(
-            latest_dispensing_record
-        )  # Serialize the latest record
-
-        return Response(
-            {"body": serializer.data, "error": False}, status=status.HTTP_200_OK
         )
 
 

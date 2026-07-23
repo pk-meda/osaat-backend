@@ -1,5 +1,5 @@
 from django.urls import path
-
+from rest_framework_simplejwt.views import TokenRefreshView  # <--- ADD THIS IMPORT
 from . import views
 
 urlpatterns = [
@@ -17,6 +17,7 @@ urlpatterns = [
         name="first-screening-create",
     ),
     path("Comprehensive", views.ComprehensiveAPIView.as_view(), name="Comprehensive"),
+    path('Comprehensive-eyetest', views.ComprehensiveEyeTestAPIView.as_view(), name='comprehensive-eyetest'),
     path(
         "Second-screening", views.SecondscreeningAPIView.as_view(), name="Comprehensive"
     ),
@@ -75,4 +76,12 @@ urlpatterns = [
         views.UserParticipantsAPIView.as_view(),
         name="get_all_participants",
     ),
+ path('reports/spec-order-sheet/',
+  views.SpecOrderReportView.as_view(),
+   name='spec_order_report'),
+
+   # Refresh Token Routes (without 'api/' prefix because root urls.py already includes 'api/')
+    path('refresh-token/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('refresh-token', TokenRefreshView.as_view()),
+
 ]

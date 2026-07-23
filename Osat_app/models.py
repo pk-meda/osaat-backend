@@ -98,7 +98,7 @@ class Participant(models.Model):
 #             ('Has spectacles and is currently wearing them', 'Has spectacles and is currently wearing them'),
 #             ('Has spectacles but not wearing them', 'Has spectacles but not wearing them'),
 #             ('Does not wear spectacles', 'Does not wear spectacles'),
-#             ('Has spectacles but not wearing however has them in their possession', 'Has spectacles but not wearing however has them in their possession '),
+#             ('The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).', 'The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school). '),
 #             ('Has spectacles but not wearing and not in their possession', 'Has spectacles but not wearing and not in their possession '),
 #             ('Has previously worn spectacles but no longer has spectacles', 'Has previously worn spectacles but no longer has spectacles '),
 #             ('Has never worn spectacles before', 'Has never worn spectacles before ')
@@ -134,7 +134,7 @@ class Participant(models.Model):
 #             ('Has spectacles and is currently wearing them', 'Has spectacles and is currently wearing them'),
 #             ('Has spectacles but not wearing them', 'Has spectacles but not wearing them'),
 #             ('Does not wear spectacles', 'Does not wear spectacles'),
-#             ('Has spectacles but not wearing however has them in their possession', 'Has spectacles but not wearing however has them in their possession'),
+#             ('The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).', 'The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).'),
 #             ('Has spectacles but not wearing and not in their possession', 'Has spectacles but not wearing and not in their possession'),
 #             ('Has previously worn spectacles but no longer has spectacles', 'Has previously worn spectacles but no longer has spectacles'),
 #             ('Has never worn spectacles before', 'Has never worn spectacles before')
@@ -171,7 +171,7 @@ class Firstscreening(models.Model):
     age = models.IntegerField(null=True, blank=True)
 
     wears_spectacles = models.CharField(
-        max_length=100,
+        max_length=255,
         choices=[
             (
                 "Has spectacles and is currently wearing them",
@@ -183,8 +183,8 @@ class Firstscreening(models.Model):
             ),
             ("Does not wear spectacles", "Does not wear spectacles"),
             (
-                "Has spectacles but not wearing however has them in their possession",
-                "Has spectacles but not wearing however has them in their possession",
+                "The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).",
+                "The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).",
             ),
             (
                 "Has spectacles but not wearing and not in their possession",
@@ -332,25 +332,23 @@ class Dispensing(models.Model):
         null=True,
         blank=True,
     )
-    reference_number = models.CharField(max_length=20)
-    frame_choice = models.CharField(max_length=50, null=True, blank=True)
-    # glasses_ordered = models.BooleanField(default=False)
-    # glasses_ready = models.BooleanField(default=False)
-    # glasses_received = models.BooleanField(default=False)
-    # glasses_dispensed = models.BooleanField(default=False)
-    # notification_sent = models.BooleanField(default=False)
-    # age = models.IntegerField(blank=True)  # Default age to avoid migration issues
-    lenses_type = models.CharField(max_length=50, null=True, blank=True)
-    pd_distance = models.CharField(max_length=10, null=True, blank=True)
-    pd_near = models.CharField(max_length=10, null=True, blank=True)
-    frame_distance = models.CharField(max_length=10, null=True, blank=True)
-    frame_near = models.CharField(max_length=10, null=True, blank=True)
-    frame_bifocal = models.CharField(max_length=10, null=True, blank=True)
-    fitting_height_re = models.CharField(max_length=10, null=True, blank=True)
-    fitting_height_le = models.CharField(max_length=10, null=True, blank=True)
-    comments = models.CharField(max_length=255, null=True, blank=True)
+    # Bump reference_number and provision_status limits
+    reference_number = models.CharField(max_length=100)
+    frame_choice = models.CharField(max_length=100, null=True, blank=True)
+    lenses_type = models.CharField(max_length=255, null=True, blank=True)
+    pd_distance = models.CharField(max_length=50, null=True, blank=True)
+    pd_near = models.CharField(max_length=50, null=True, blank=True)
+    frame_distance = models.CharField(max_length=50, null=True, blank=True)
+    frame_near = models.CharField(max_length=50, null=True, blank=True)
+    frame_bifocal = models.CharField(max_length=50, null=True, blank=True)
+    fitting_height_re = models.CharField(max_length=50, null=True, blank=True)
+    fitting_height_le = models.CharField(max_length=50, null=True, blank=True)
+    
+    # Change CharField to TextField or max_length=500 for comments
+    comments = models.TextField(null=True, blank=True)
+    
     provision_date = models.DateTimeField(auto_now_add=True)
-    provision_status = models.CharField(max_length=50, null=True, blank=True)
+    provision_status = models.CharField(max_length=255, null=True, blank=True)
     dispensing = models.BooleanField(default=True)
 
     def __str__(self):
@@ -404,12 +402,32 @@ class ComprehensiveEyeTest(models.Model):
         blank=True,
     )
     TEST_RESULTS = [("pass", "Pass"), ("fail", "Fail")]
+    MEASUREMENT_CHOICES = [("Aided", "Aided"), ("Unaided", "Unaided")]
 
+    # Existing fields
     reference_number = models.CharField(max_length=50, unique=True)
     left_eye_score = models.FloatField()
     right_eye_score = models.FloatField()
     additional_ocular_complaints = models.BooleanField(default=False)
     test_result = models.CharField(max_length=10, choices=TEST_RESULTS)
+
+    # --- NEWLY ADDED FIELDS ---
+    testing_distance_meters = models.FloatField(default=3.0)
+    measurement_type = models.CharField(
+        max_length=10, 
+        choices=MEASUREMENT_CHOICES, 
+        default="Unaided"
+    )
+    
+    # Left Eye Details
+    left_eye_tested = models.BooleanField(default=False)
+    left_pass_fail = models.CharField(max_length=10, choices=TEST_RESULTS, blank=True, null=True)
+    left_numeric_va = models.CharField(max_length=15, blank=True, null=True) # e.g. "6/6"
+    
+    # Right Eye Details
+    right_eye_tested = models.BooleanField(default=False)
+    right_pass_fail = models.CharField(max_length=10, choices=TEST_RESULTS, blank=True, null=True)
+    right_numeric_va = models.CharField(max_length=15, blank=True, null=True) # e.g. "6/12"
 
     def __str__(self):
         return f"{self.reference_number} - {self.test_result}"

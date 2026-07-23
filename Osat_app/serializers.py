@@ -23,6 +23,7 @@ from .models import (
     SurgeryTreatmentHistory,
     VisualAcuityMeasurement,
     school,
+    ComprehensiveEyeTest,
 )
 
 
@@ -285,3 +286,9 @@ class PatientComplaintSerializer(serializers.ModelSerializer):
             instance.set_complaints(complaints)
         instance.save()
         return instance
+
+
+class ComprehensiveEyeTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ComprehensiveEyeTest
+        fields = '__all__'

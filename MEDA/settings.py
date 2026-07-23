@@ -76,11 +76,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "MEDA.wsgi.application"
 
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
 # The modern setting name (Recommended for Django 4.0+)
 CORS_ALLOWED_ORIGINS = [
     "https://osaat.aei.org.za",  # <--- ADD THIS LINE
-    "http://localhost:8100",
+    "http://localhost:8000",
     "http://localhost:8101",
     "http://localhost",
     "https://localhost",
@@ -91,6 +91,9 @@ CORS_ALLOWED_ORIGINS = [
     "https://osaatapi.trickywebsolutions.com",
     "https://osaat-api-fwccdeftescfb9dk.southafricanorth-01.azurewebsites.net",
     "https://victorious-rock-01bf2c21e.4.azurestaticapps.net",
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+
 ]
 
 # The legacy setting name (Keep this for backward compatibility)
