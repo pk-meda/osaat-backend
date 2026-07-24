@@ -97,8 +97,8 @@ class Participant(models.Model):
 #         choices=[
 #             ('Has spectacles and is currently wearing them', 'Has spectacles and is currently wearing them'),
 #             ('Has spectacles but not wearing them', 'Has spectacles but not wearing them'),
-#             ('Does not wear spectacles', 'Does not wear spectacles'),
-#             ('The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).', 'The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school). '),
+#             ('Spactacles not wearing', 'Spactacles not wearing'),
+#             ('Has worn spectacles in the past', 'Has worn spectacles in the past '),
 #             ('Has spectacles but not wearing and not in their possession', 'Has spectacles but not wearing and not in their possession '),
 #             ('Has previously worn spectacles but no longer has spectacles', 'Has previously worn spectacles but no longer has spectacles '),
 #             ('Has never worn spectacles before', 'Has never worn spectacles before ')
@@ -133,8 +133,8 @@ class Participant(models.Model):
 #         choices=[
 #             ('Has spectacles and is currently wearing them', 'Has spectacles and is currently wearing them'),
 #             ('Has spectacles but not wearing them', 'Has spectacles but not wearing them'),
-#             ('Does not wear spectacles', 'Does not wear spectacles'),
-#             ('The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).', 'The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).'),
+#             ('Spactacles not wearing', 'Spactacles not wearing'),
+#             ('Has worn spectacles in the past', 'Has worn spectacles in the past'),
 #             ('Has spectacles but not wearing and not in their possession', 'Has spectacles but not wearing and not in their possession'),
 #             ('Has previously worn spectacles but no longer has spectacles', 'Has previously worn spectacles but no longer has spectacles'),
 #             ('Has never worn spectacles before', 'Has never worn spectacles before')
@@ -181,10 +181,10 @@ class Firstscreening(models.Model):
                 "Has spectacles but not wearing them",
                 "Has spectacles but not wearing them",
             ),
-            ("Does not wear spectacles", "Does not wear spectacles"),
+            ("Spectacles not wearing", "Spectacles not wearing"),
             (
-                "The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).",
-                "The child has spectacles but the need is only partially addressed (e.g., incorrect prescription, damaged spectacles, poor fit, inconsistent use, or spectacles not brought to school).",
+                "Has worn spectacles in the past",
+                "Has worn spectacles in the past",
             ),
             (
                 "Has spectacles but not wearing and not in their possession",

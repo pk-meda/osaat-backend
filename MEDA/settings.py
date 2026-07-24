@@ -93,6 +93,9 @@ CORS_ALLOWED_ORIGINS = [
     "https://victorious-rock-01bf2c21e.4.azurestaticapps.net",
     "http://localhost:4200",
     "http://127.0.0.1:4200",
+    "http://192.168.0.128:4200", # If your frontend is running on this IP
+    "http://192.168.0.128:8000",
+    "http://192.168.0.128",
 
 ]
 
