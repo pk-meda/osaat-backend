@@ -16,6 +16,8 @@ urlpatterns = [
         views.FirstScreeningAPIView.as_view(),
         name="first-screening-create",
     ),
+    # ADD THIS LINE:
+    path('first-screening/<int:pk>/', views.update_first_screening, name='first-screening-update'),
     path("Comprehensive", views.ComprehensiveAPIView.as_view(), name="Comprehensive"),
     path('Comprehensive-eyetest', views.ComprehensiveEyeTestAPIView.as_view(), name='comprehensive-eyetest'),
     path(

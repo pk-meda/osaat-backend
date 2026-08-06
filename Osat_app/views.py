@@ -18,6 +18,7 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.serializers import serialize
 from django.db.models import Q
+from django.db import transaction
 from django.http import JsonResponse
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
@@ -34,6 +35,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes  # <--- ADD THIS LINE
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -215,6 +217,30 @@ class UserLoginView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+#supports PUT/PATCH updates for an existing Firstscreening instance.
+@api_view(['PATCH', 'PUT'])
+@permission_classes([AllowAny])
+def update_first_screening(request, pk):
+    try:
+        screening = Firstscreening.objects.get(pk=pk)
+    except Firstscreening.DoesNotExist:
+        return Response({'error': True, 'message': 'Record not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Pass partial=True to allow updating step 2 fields without re-validating read-only fields
+    serializer = FirstScreeningSerializer(screening, data=request.data, partial=True)
+    if serializer.is_valid():
+        instance = serializer.save()
+        return Response({
+            'error': False,
+            'message': 'Screening updated successfully.',
+            'body': FirstScreeningSerializer(instance).data
+        }, status=status.HTTP_200_OK)
+
+    return Response({
+        'error': True,
+        'message': 'Validation failed.',
+        'body': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
 
 # User-Logout API
 class UserLogoutView(APIView):
@@ -513,24 +539,59 @@ class FirstScreeningAPIView(APIView):
 
     def post(self, request):
         serializer = FirstScreeningSerializer(data=request.data)
+        
         if serializer.is_valid():
-            first_screening = serializer.save(created_by=request.user)
+            try:
+                with transaction.atomic():
+                    # Extract or generate unique reference number
+                    ref_num = request.data.get("reference_number")
+                    if not ref_num or ref_num == "":
+                        ref_num = f"SS-{uuid.uuid4().hex[:8].upper()}"
+                        
 
-            participant, _ = Participant.objects.get_or_create(
-                reference_number=first_screening.reference_number
-            )
-            participant.created_by = request.user
-            participant.first_screening = True
-            participant.save()
+                    # 1. Save FirstScreening instance with reference_number
+                    first_screening = serializer.save(
+                        created_by=request.user,
+                        reference_number=ref_num
+                    )
 
-            return Response(
-                {
-                    "body": serializer.data,
-                    "message": "Student registered successfully.",
-                    "error": False,
-                },
-                status=status.HTTP_201_CREATED,
-            )
+                    # 2. Safely get or create the linked Participant record
+                    participant, created = Participant.objects.get_or_create(
+                        reference_number=ref_num,
+                        defaults={
+                            "created_by": request.user,
+                            "first_screening": True,
+                        }
+                    )
+
+                    if not created:
+                        participant.created_by = request.user
+                        participant.first_screening = True
+                        participant.save()
+
+                    # 3. Formulate response payload
+                    response_data = serializer.data
+                    response_data["reference_number"] = ref_num
+
+                    return Response(
+                        {
+                            "body": response_data,
+                            "message": "Student registered successfully.",
+                            "error": False,
+                        },
+                        status=status.HTTP_201_CREATED,
+                    )
+
+            except Exception as e:
+                # Catches internal DB errors and returns explicit error context instead of crash 500
+                return Response(
+                    {
+                        "body": str(e),
+                        "message": "Database error while processing screening.",
+                        "error": True,
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
         return Response(
             {
@@ -640,12 +701,9 @@ class ComprehensiveEyeTestAPIView(APIView):
 
 
 class Echo:
-    """An object that implements just the write method of the file-like
-    interface and returns the string itself to stream performance data.
-    """
+    """An object that implements just the write method of the file-like interface."""
     def write(self, value):
         return value
-
 
 class SpecOrderReportView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -676,7 +734,7 @@ class SpecOrderReportView(APIView):
             participants = participants.filter(reference_number__in=matching_ref_numbers)
 
         headers = [
-            'Reference Number', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade',
+            'Reference Number', 'Screening Date', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade',
             'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)',
             'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)',
             'Frame Choice', 'Lenses Type', 'PD Distance', 'Comments'
@@ -708,14 +766,21 @@ class SpecOrderReportView(APIView):
                 ).first()
 
                 # 4. Robust Dispensing lookup:
-                #    - Checks reverse FK relation 'p.dispensings'
-                #    - Checks direct FK relation 'participant=p'
-                #    - Checks stripped case-insensitive reference_number match
                 dispensing = (
                     (hasattr(p, 'dispensings') and p.dispensings.order_by('-id').first()) or
                     Dispensing.objects.filter(participant=p).order_by('-id').first() or
                     Dispensing.objects.filter(reference_number__iexact=ref_num).order_by('-id').first()
                 )
+
+                # Extract screening date safely (checks created_at / date / date_created across FS and SS)
+                screening_obj = fs or ss
+                created_at_val = getattr(screening_obj, 'created_at', None) or getattr(screening_obj, 'date_created', None) or getattr(screening_obj, 'date', None)
+                
+                if created_at_val:
+                    # Format as YYYY-MM-DD if it's a datetime/date object
+                    screening_date = created_at_val.strftime('%Y-%m-%d') if hasattr(created_at_val, 'strftime') else str(created_at_val)
+                else:
+                    screening_date = ""
 
                 # Safely extract participant & screening fields
                 name = ss.name if ss and ss.name else ""
@@ -736,6 +801,7 @@ class SpecOrderReportView(APIView):
 
                 row = [
                     ref_num,
+                    screening_date,
                     name,
                     surname,
                     age,
@@ -759,7 +825,7 @@ class SpecOrderReportView(APIView):
         response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
         response['Content-Disposition'] = 'attachment; filename="spec_order_sheet.csv"'
         return response
-
+        
 # class SecondscreeningAPIView(APIView):
 #     authentication_classes = [TokenAuthentication]
 #     permission_classes = [IsAuthenticated]

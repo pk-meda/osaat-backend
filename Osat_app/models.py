@@ -159,6 +159,13 @@ class Firstscreening(models.Model):
         null=True,
         blank=True,
     )
+    # Add these direct participant fields matching your form controls
+    name = models.CharField(max_length=100, null=True, blank=True)
+    surname = models.CharField(max_length=100, null=True, blank=True)
+    contact_first_name = models.CharField(max_length=100, null=True, blank=True)
+    contact_surname = models.CharField(max_length=100, null=True, blank=True)
+    contact_number = models.CharField(max_length=15, null=True, blank=True)
+    relationship = models.CharField(max_length=50, null=True, blank=True)
     grade = models.CharField(max_length=10, null=True, blank=True)
 
     gender = models.CharField(
@@ -470,9 +477,11 @@ class RefractionExamination(models.Model):
             ("RIGHT EYE", "Right Eye"),
             ("BOTH EYES", "Both Eyes"),
         ],
+    null=True,
+    blank=True,
     )
 
-    duration = models.IntegerField()
+    duration = models.IntegerField(null=True, blank=True)
     additional_ocular_complaint = models.BooleanField(default=False)
     ocular_alignment_remarks = models.TextField(blank=True, null=True)
     refraction_and_examination = models.BooleanField(default=True)
@@ -865,6 +874,7 @@ VISUAL_ACUITY_DISTANCE_CHOICES = [
 ]
 
 VISUAL_ACUITY_NEAR_CHOICES = [
+    ("NO TEST", "NO TEST"),
     ("N6", "N6"),
     ("N8", "N8"),
     ("N10", "N10"),
