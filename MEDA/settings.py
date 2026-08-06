@@ -90,7 +90,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:52380",
     "https://osaatapi.trickywebsolutions.com",
     "https://osaat-api-fwccdeftescfb9dk.southafricanorth-01.azurewebsites.net",
-    "https://victorious-rock-01bf2c21e.4.azurestaticapps.net",
+    "https://https://wonderful-cliff-0eb977310.7.azurestaticapps.net",
     "http://localhost:4200",
     "http://127.0.0.1:4200",
     "http://192.168.0.128:4200", # If your frontend is running on this IP
@@ -206,7 +206,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 
 # frontend url
-FRONTEND_URL = "https://victorious-rock-01bf2c21e.4.azurestaticapps.net"
+FRONTEND_URL = "https://https://wonderful-cliff-0eb977310.7.azurestaticapps.net"
 
 ##Email send
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
