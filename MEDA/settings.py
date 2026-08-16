@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-ldhy$c9fg9x$iofx5oby!qr^!k3wpxx1z)ok!gxk#2jo*a5!j$"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -76,7 +76,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "MEDA.wsgi.application"
 
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_ALLOW_ALL = False
 # The modern setting name (Recommended for Django 4.0+)
 CORS_ALLOWED_ORIGINS = [
     "https://osaat.aei.org.za",  # <--- ADD THIS LINE
