@@ -1,5 +1,5 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView  # <--- ADD THIS IMPORT
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 urlpatterns = [
@@ -16,12 +16,11 @@ urlpatterns = [
         views.FirstScreeningAPIView.as_view(),
         name="first-screening-create",
     ),
-    # ADD THIS LINE:
     path('first-screening/<int:pk>/', views.update_first_screening, name='first-screening-update'),
     path("Comprehensive", views.ComprehensiveAPIView.as_view(), name="Comprehensive"),
     path('Comprehensive-eyetest', views.ComprehensiveEyeTestAPIView.as_view(), name='comprehensive-eyetest'),
     path(
-        "Second-screening", views.SecondscreeningAPIView.as_view(), name="Comprehensive"
+        "Second-screening", views.SecondscreeningAPIView.as_view(), name="Second-screening"
     ),
     path("Dispensing", views.DispensingAPIView.as_view(), name="Retest"),
     path(
@@ -66,7 +65,7 @@ urlpatterns = [
         views.FailedStudents.as_view(),
         name="failed_students_for_second_screening",
     ),
-    # path('reference_  number', views.ReferenceNumberCheckAPIView.as_view(), name='reference_number')
+    # path('reference_ number', views.ReferenceNumberCheckAPIView.as_view(), name='reference_number')
     path("school", views.schoolView.as_view(), name="school"),
     path(
         "ali-text-search",
@@ -78,12 +77,16 @@ urlpatterns = [
         views.UserParticipantsAPIView.as_view(),
         name="get_all_participants",
     ),
- path('reports/spec-order-sheet/',
-  views.SpecOrderReportView.as_view(),
-   name='spec_order_report'),
 
-   # Refresh Token Routes (without 'api/' prefix because root urls.py already includes 'api/')
+    # Reports Endpoints
+    path('reports/spec-order-sheet/', views.SpecOrderReportView.as_view(), name='spec_order_report'),
+    path('reports/spec-order-sheet/metrics/', views.ReportMetricsView.as_view(), name='spec_order_metrics'),
+    path('reports/spec-order-sheet/orders/', views.SpecOrderReportView.as_view(), name='spec_order_orders'),
+    path('reports/spec-order-sheet/screenings/', views.ScreeningReportView.as_view(), name='screening_report'),
+    path('reports/spec-order-sheet/examinations/', views.ClinicalExaminationReportView.as_view(), name='clinical_examination_report'),
+    path('reports/spec-order-sheet/diagnoses/', views.DiagnosisReportView.as_view(), name='diagnosis_report'),
+
+    # Refresh Token Routes
     path('refresh-token/', TokenRefreshView.as_view(), name='token_refresh'),
     path('refresh-token', TokenRefreshView.as_view()),
-
 ]
