@@ -899,233 +899,477 @@ class BaseCSVReportView(APIView):
         raise NotImplementedError
 
 
-class SpecOrderReportView(BaseCSVReportView):
-    filename = "Spec_Order_Sheet.csv"
-    headers = [
-        'Reference Number', 'Screening Date', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade',
-        'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)',
-        'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)',
-        'Frame Choice', 'Lenses Type', 'PD Distance', 'Frame Distance', 'Frame Near', 'Frame Bifocal', 
-        'Fitting Height RE', 'Fitting Height LE', 'Provision Status', 'Comments'
-    ]
 
-    def get_row_data(self, p):
-        ref_num = str(p.reference_number).strip() if p.reference_number else ''
-        
-        # Robust lookups matching your working implementation
-        fs = (
-            (hasattr(p, 'first_screenings') and p.first_screenings.first()) or
-            Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
-        )
-        ss = (
-            (hasattr(p, 'second_screenings') and p.second_screenings.first()) or
-            SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
-        )
-        refraction = RefractionExamination.objects.filter(
-            reference_number__iexact=ref_num
-        ).first()
-        dispensing = (
-            (hasattr(p, 'dispensings') and p.dispensings.order_by('-id').first()) or
-            Dispensing.objects.filter(participant=p).order_by('-id').first() or
-            Dispensing.objects.filter(reference_number__iexact=ref_num).order_by('-id').first()
-        )
 
-        screening_obj = fs or ss
-        created_at_val = getattr(screening_obj, 'created_at', None) or getattr(screening_obj, 'date_created', None) or getattr(screening_obj, 'date', None)
-        
-        if created_at_val:
-            screening_date = created_at_val.strftime('%Y-%m-%d') if hasattr(created_at_val, 'strftime') else str(created_at_val)
-        else:
-            screening_date = ""
+# Custom Echo class for streaming CSV output chunk-by-chunk
+class Echo:
+    def write(self, value):
+        return value
 
-        name = ss.name if ss and ss.name else (fs.name if fs and fs.name else "")
-        surname = ss.surname if ss and ss.surname else (fs.surname if fs and fs.surname else "")
-        age = fs.age if fs and fs.age is not None else ""
-        gender = fs.gender if fs and fs.gender else ""
-        school_name = (
-            (ss.school if ss and ss.school else None) or 
-            (fs.school if fs and fs.school else "")
-        )
-        grade = fs.grade if fs and fs.grade else ""
 
-        return [
-            ref_num,
-            screening_date,
-            name,
-            surname,
-            age,
-            gender,
-            school_name,
-            grade,
-            refraction.sph_RE_final if refraction and refraction.sph_RE_final else "",
-            refraction.cyl_RE_final if refraction and refraction.cyl_RE_final else "",
-            refraction.axis_RE_final if refraction and refraction.axis_RE_final else "",
-            refraction.sph_LE_final if refraction and refraction.sph_LE_final else "",
-            refraction.cyl_LE_final if refraction and refraction.cyl_LE_final else "",
-            refraction.axis_LE_final if refraction and refraction.axis_LE_final else "",
-            dispensing.frame_choice if dispensing and dispensing.frame_choice else "",
-            dispensing.lenses_type if dispensing and dispensing.lenses_type else "",
-            dispensing.pd_distance if dispensing and dispensing.pd_distance else "",
-            dispensing.frame_distance if dispensing and dispensing.frame_distance else "",
-            dispensing.frame_near if dispensing and dispensing.frame_near else "",
-            dispensing.frame_bifocal if dispensing and dispensing.frame_bifocal else "",
-            dispensing.fitting_height_re if dispensing and dispensing.fitting_height_re else "",
-            dispensing.fitting_height_le if dispensing and dispensing.fitting_height_le else "",
-            dispensing.provision_status if dispensing and dispensing.provision_status else "",
-            dispensing.comments if dispensing and dispensing.comments else ""
+class SpecOrderReportView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        school_filter = request.query_params.get('school', None)
+        participants = Participant.objects.all()
+
+        if school_filter and school_filter.strip():
+            clean_school = school_filter.strip()
+            fs_ref_numbers = Firstscreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            ss_ref_numbers = SecondScreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
+            participants = participants.filter(reference_number__in=matching_ref_numbers)
+
+        headers = [
+            'Reference Number', 'Screening Date', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade',
+            'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)',
+            'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)',
+            'Frame Choice', 'Lenses Type', 'PD Distance', 'Frame Distance', 'Frame Near', 'Frame Bifocal', 
+            'Fitting Height RE', 'Fitting Height LE', 'Provision Status', 'Comments'
         ]
 
+        def stream_rows():
+            writer = csv.writer(Echo())
+            yield writer.writerow(headers)
 
-class ScreeningReportView(BaseCSVReportView):
-    filename = "Screening_Report.csv"
-    headers = [
-        'Reference Number', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade', 
-        'Contact First Name', 'Contact Surname', 'Contact Number', 'Relationship', 
-        'Wears Spectacles Status', 'First Screening Passed', 'Second Screening Registered', 'Referral Clinic'
-    ]
+            for p in participants.iterator():
+                ref_num = str(p.reference_number).strip() if p.reference_number else ''
 
-    def get_row_data(self, p):
-        ref_num = str(p.reference_number).strip() if p.reference_number else ''
-        fs = Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
-        ss = SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
-        if not fs and not ss:
-            return None
-        return [
-            ref_num,
-            ss.name if ss and ss.name else (fs.name if fs else ""),
-            ss.surname if ss and ss.surname else (fs.surname if fs else ""),
-            fs.age if fs and fs.age is not None else "",
-            fs.gender if fs and fs.gender else "",
-            (ss.school if ss and ss.school else None) or (fs.school if fs else ""),
-            fs.grade if fs else "",
-            ss.contact_first_name if ss and ss.contact_first_name else (fs.contact_first_name if fs else ""),
-            ss.contact_surname if ss and ss.contact_surname else (fs.contact_surname if fs else ""),
-            ss.contact_number if ss and ss.contact_number else (fs.contact_number if fs else ""),
-            ss.relationship if ss and ss.relationship else (fs.relationship if fs else ""),
-            fs.wears_spectacles if fs else "",
-            "Yes" if p.first_screening else "No",
-            "Yes" if p.second_screening else "No",
-            fs.referral_clinic if fs else ""
+                fs = (
+                    (hasattr(p, 'first_screenings') and p.first_screenings.first()) or
+                    Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
+                )
+                ss = (
+                    (hasattr(p, 'second_screenings') and p.second_screenings.first()) or
+                    SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
+                )
+                refraction = RefractionExamination.objects.filter(
+                    reference_number__iexact=ref_num
+                ).first()
+                dispensing = (
+                    (hasattr(p, 'dispensings') and p.dispensings.order_by('-id').first()) or
+                    Dispensing.objects.filter(participant=p).order_by('-id').first() or
+                    Dispensing.objects.filter(reference_number__iexact=ref_num).order_by('-id').first()
+                )
+
+                screening_obj = fs or ss
+                created_at_val = getattr(screening_obj, 'created_at', None) or getattr(screening_obj, 'date_created', None) or getattr(screening_obj, 'date', None)
+                
+                if created_at_val:
+                    screening_date = created_at_val.strftime('%Y-%m-%d') if hasattr(created_at_val, 'strftime') else str(created_at_val)
+                else:
+                    screening_date = ""
+
+                name = ss.name if ss and ss.name else (fs.name if fs and fs.name else "")
+                surname = ss.surname if ss and ss.surname else (fs.surname if fs and fs.surname else "")
+                age = fs.age if fs and fs.age is not None else ""
+                gender = fs.gender if fs and fs.gender else ""
+                school_name = (
+                    (ss.school if ss and ss.school else None) or 
+                    (fs.school if fs and fs.school else "")
+                )
+                grade = fs.grade if fs and fs.grade else ""
+
+                row = [
+                    ref_num,
+                    screening_date,
+                    name,
+                    surname,
+                    age,
+                    gender,
+                    school_name,
+                    grade,
+                    refraction.sph_RE_final if refraction and refraction.sph_RE_final else "",
+                    refraction.cyl_RE_final if refraction and refraction.cyl_RE_final else "",
+                    refraction.axis_RE_final if refraction and refraction.axis_RE_final else "",
+                    refraction.sph_LE_final if refraction and refraction.sph_LE_final else "",
+                    refraction.cyl_LE_final if refraction and refraction.cyl_LE_final else "",
+                    refraction.axis_LE_final if refraction and refraction.axis_LE_final else "",
+                    dispensing.frame_choice if dispensing and dispensing.frame_choice else "",
+                    dispensing.lenses_type if dispensing and dispensing.lenses_type else "",
+                    dispensing.pd_distance if dispensing and dispensing.pd_distance else "",
+                    dispensing.frame_distance if dispensing and dispensing.frame_distance else "",
+                    dispensing.frame_near if dispensing and dispensing.frame_near else "",
+                    dispensing.frame_bifocal if dispensing and dispensing.frame_bifocal else "",
+                    dispensing.fitting_height_re if dispensing and dispensing.fitting_height_re else "",
+                    dispensing.fitting_height_le if dispensing and dispensing.fitting_height_le else "",
+                    dispensing.provision_status if dispensing and dispensing.provision_status else "",
+                    dispensing.comments if dispensing and dispensing.comments else ""
+                ]
+
+                yield writer.writerow(row)
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="Spec_Order_Sheet.csv"'
+        return response
+
+
+class ScreeningReportView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        school_filter = request.query_params.get('school', None)
+        participants = Participant.objects.all()
+
+        if school_filter and school_filter.strip():
+            clean_school = school_filter.strip()
+            fs_ref_numbers = Firstscreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            ss_ref_numbers = SecondScreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
+            participants = participants.filter(reference_number__in=matching_ref_numbers)
+
+        headers = [
+            'Reference Number', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade', 
+            'Contact First Name', 'Contact Surname', 'Contact Number', 'Relationship', 
+            'Wears Spectacles Status', 'First Screening Completed', 'Second Screening Registered', 
+            'Screening Result', 'Referral Clinic'
         ]
 
+        def stream_rows():
+            writer = csv.writer(Echo())
+            yield writer.writerow(headers)
 
-class ClinicalExaminationReportView(BaseCSVReportView):
-    filename = "Clinical_Examinations_Report.csv"
-    headers = [
-        'Reference Number', 'Chief Complaint', 'Duration (Months/Days)', 'Eye', 'Additional Ocular Complaint',
-        'BCVA RE', 'BCVA LE', 'ADD RE', 'ADD LE', 'NPC', 'Ocular Alignment Remarks',
-        'RE Sph (Dry)', 'RE Cyl (Dry)', 'RE Axis (Dry)', 'LE Sph (Dry)', 'LE Cyl (Dry)', 'LE Axis (Dry)',
-        'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)', 'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)'
-    ]
+            for p in participants.iterator():
+                ref_num = str(p.reference_number).strip() if p.reference_number else ''
+                fs = Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
+                ss = SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
 
-    def get_row_data(self, p):
-        ref_num = str(p.reference_number).strip() if p.reference_number else ''
-        refraction = RefractionExamination.objects.filter(reference_number__iexact=ref_num).first()
-        if not refraction:
-            return None
-        return [
-            ref_num, 
-            refraction.chief_complaint, 
-            refraction.duration, 
-            refraction.eye, 
-            "Yes" if refraction.additional_ocular_complaint else "No",
-            refraction.bcva_RE, 
-            refraction.bcva_LE, 
-            refraction.add_RE, 
-            refraction.add_LE, 
-            refraction.npc,
-            refraction.ocular_alignment_remarks,
-            refraction.sph_RE_dry, refraction.cyl_RE_dry, refraction.axis_RE_dry,
-            refraction.sph_LE_dry, refraction.cyl_LE_dry, refraction.axis_LE_dry,
-            refraction.sph_RE_final, refraction.cyl_RE_final, refraction.axis_RE_final,
-            refraction.sph_LE_final, refraction.cyl_LE_final, refraction.axis_LE_final
+                if not fs and not ss:
+                    continue
+
+                # Fetch database record for Visual Acuity
+                va = VisualAcuityMeasurement.objects.filter(reference_number__iexact=ref_num).first()
+
+                # Exact mapping from DB column
+                if va and va.screening_result:
+                    screening_result = va.screening_result.capitalize()  # 'Pass' or 'Fail'
+                elif va and va.measure_visual_acuity:
+                    screening_result = "Pass"
+                else:
+                    screening_result = "Pending"
+
+                row = [
+                    ref_num,
+                    ss.name if ss and ss.name else (fs.name if fs else ""),
+                    ss.surname if ss and ss.surname else (fs.surname if fs else ""),
+                    fs.age if fs and fs.age is not None else "",
+                    fs.gender if fs and fs.gender else "",
+                    (ss.school if ss and ss.school else None) or (fs.school if fs else ""),
+                    fs.grade if fs else "",
+                    ss.contact_first_name if ss and ss.contact_first_name else (fs.contact_first_name if fs else ""),
+                    ss.contact_surname if ss and ss.contact_surname else (fs.contact_surname if fs else ""),
+                    ss.contact_number if ss and ss.contact_number else (fs.contact_number if fs else ""),
+                    ss.relationship if ss and ss.relationship else (fs.relationship if fs else ""),
+                    fs.wears_spectacles if fs else "",
+                    "Yes" if getattr(p, 'first_screening', False) or fs else "No",
+                    "Yes" if getattr(p, 'second_screening', False) or ss else "No",
+                    screening_result,
+                    fs.referral_clinic if fs else ""
+                ]
+
+                yield writer.writerow(row)
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="Screening_Report.csv"'
+        return response
+
+
+class ClinicalExaminationReportView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        school_filter = request.query_params.get('school', None)
+        participants = Participant.objects.all()
+
+        if school_filter and school_filter.strip():
+            clean_school = school_filter.strip()
+            fs_ref_numbers = Firstscreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            ss_ref_numbers = SecondScreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
+            participants = participants.filter(reference_number__in=matching_ref_numbers)
+
+        headers = [
+            'Reference Number', 'Registration Date', 'Chief Complaint', 'Duration (Years)', 'Eye', 'Additional Ocular Complaint',
+            'BCVA RE', 'BCVA LE', 'ADD RE', 'ADD LE', 'NPC', 'Ocular Alignment Remarks',
+            'RE Sph (Dry)', 'RE Cyl (Dry)', 'RE Axis (Dry)', 'LE Sph (Dry)', 'LE Cyl (Dry)', 'LE Axis (Dry)',
+            'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)', 'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)'
         ]
 
+        def force_text(val):
+            """Prevents Excel from converting visual acuity fractions (e.g. 6/6) to dates."""
+            if val is None or val == "":
+                return ""
+            val_str = str(val).strip()
+            if "/" in val_str:
+                return f'="{val_str}"'
+            return val_str
 
-class VisualAcuityReportView(BaseCSVReportView):
-    filename = "Visual_Acuity_Report.csv"
-    headers = [
-        'Reference Number', 
-        'Unaided Dist VA RE', 'Unaided Dist VA LE', 'Unaided Near VA RE', 'Unaided Near VA LE',
-        'Aided Dist VA RE', 'Aided Dist VA LE', 'Aided Near VA RE', 'Aided Near VA LE',
-        'PinHole Dist VA RE', 'PinHole Dist VA LE'
-    ]
+        def stream_rows():
+            writer = csv.writer(Echo())
+            yield writer.writerow(headers)
 
-    def get_row_data(self, p):
-        ref_num = str(p.reference_number).strip() if p.reference_number else ''
-        va = VisualAcuityMeasurement.objects.filter(reference_number__iexact=ref_num).first()
-        if not va:
-            return None
-        return [
-            ref_num,
-            va.unaided_distance_va_re, va.unaided_distance_va_le,
-            va.unaided_near_va_re, va.unaided_near_va_le,
-            va.aided_distance_va_re, va.aided_distance_va_le,
-            va.aided_near_va_re, va.aided_near_va_le,
-            va.ph_distance_va_re, getattr(va, 'ph_distance_va_le', getattr(va, 'pd_distance_va_le', ''))
+            for p in participants.iterator():
+                ref_num = str(p.reference_number).strip() if p.reference_number else ''
+                fs = Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
+                ss = SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
+                refraction = RefractionExamination.objects.filter(reference_number__iexact=ref_num).first()
+
+                if not refraction:
+                    continue
+
+                # Fetch patient complaint record directly from Osat_app_patientcomplaint
+                complaint_obj = PatientComplaint.objects.filter(reference_number__iexact=ref_num).first()
+
+                # Extract Chief Complaint (selected_complaint)
+                chief_complaint = ""
+                if complaint_obj and getattr(complaint_obj, 'selected_complaint', None):
+                    chief_complaint = complaint_obj.selected_complaint
+                elif refraction.chief_complaint:
+                    chief_complaint = refraction.chief_complaint
+
+                # Extract Affected Eye (effected_eye)
+                effected_eye = ""
+                if complaint_obj and getattr(complaint_obj, 'effected_eye', None):
+                    effected_eye = complaint_obj.effected_eye
+                elif refraction.eye:
+                    effected_eye = refraction.eye
+
+                # Registration Date extraction
+                reg_date = ""
+                if fs and getattr(fs, 'created_at', None):
+                    reg_date = fs.created_at.strftime('%Y-%m-%d')
+                elif ss and getattr(ss, 'created_at', None):
+                    reg_date = ss.created_at.strftime('%Y-%m-%d')
+                elif getattr(p, 'created_at', None):
+                    reg_date = p.created_at.strftime('%Y-%m-%d')
+
+                row = [
+                    ref_num,
+                    reg_date,
+                    chief_complaint,
+                    refraction.duration if refraction.duration else "",
+                    effected_eye,
+                    "Yes" if refraction.additional_ocular_complaint else "No",
+                    force_text(refraction.bcva_RE),
+                    force_text(refraction.bcva_LE),
+                    force_text(refraction.add_RE),
+                    force_text(refraction.add_LE),
+                    refraction.npc if refraction.npc else "",
+                    refraction.ocular_alignment_remarks if refraction.ocular_alignment_remarks else "",
+                    refraction.sph_RE_dry if refraction.sph_RE_dry else "",
+                    refraction.cyl_RE_dry if refraction.cyl_RE_dry else "",
+                    refraction.axis_RE_dry if refraction.axis_RE_dry else "",
+                    refraction.sph_LE_dry if refraction.sph_LE_dry else "",
+                    refraction.cyl_LE_dry if refraction.cyl_LE_dry else "",
+                    refraction.axis_LE_dry if refraction.axis_LE_dry else "",
+                    refraction.sph_RE_final if refraction.sph_RE_final else "",
+                    refraction.cyl_RE_final if refraction.cyl_RE_final else "",
+                    refraction.axis_RE_final if refraction.axis_RE_final else "",
+                    refraction.sph_LE_final if refraction.sph_LE_final else "",
+                    refraction.cyl_LE_final if refraction.cyl_LE_final else "",
+                    refraction.axis_LE_final if refraction.axis_LE_final else ""
+                ]
+
+                yield writer.writerow(row)
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="Clinical_Examinations_Report.csv"'
+        return response
+
+
+class VisualAcuityReportView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        school_filter = request.query_params.get('school', None)
+        participants = Participant.objects.all()
+
+        if school_filter and school_filter.strip():
+            clean_school = school_filter.strip()
+            fs_ref_numbers = Firstscreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            ss_ref_numbers = SecondScreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
+            participants = participants.filter(reference_number__in=matching_ref_numbers)
+
+        headers = [
+            'Reference Number', 
+            'Unaided Dist VA RE', 'Unaided Dist VA LE', 'Unaided Near VA RE', 'Unaided Near VA LE',
+            'Aided Dist VA RE', 'Aided Dist VA LE', 'Aided Near VA RE', 'Aided Near VA LE',
+            'PinHole Dist VA RE', 'PinHole Dist VA LE'
         ]
 
+        def stream_rows():
+            writer = csv.writer(Echo())
+            yield writer.writerow(headers)
 
-class DiagnosisReportView(BaseCSVReportView):
-    filename = "Diagnosis_Management_Report.csv"
-    headers = ['Reference Number', 'Refractive Error Type', 'Affected Eye', 'Ocular Condition', 'Management Plan']
+            for p in participants.iterator():
+                ref_num = str(p.reference_number).strip() if p.reference_number else ''
+                va = VisualAcuityMeasurement.objects.filter(reference_number__iexact=ref_num).first()
 
-    def get_row_data(self, p):
-        ref_num = str(p.reference_number).strip() if p.reference_number else ''
-        diag = Diagnosis.objects.filter(reference_number__iexact=ref_num).first()
-        if not diag:
-            return None
-        
-        management_str = ", ".join(diag.management_plan) if isinstance(diag.management_plan, list) else str(diag.management_plan or "")
+                if not va:
+                    continue
 
-        return [
-            ref_num, diag.refractive_error_type, diag.affected_eye, diag.ocular_condition, management_str
+                row = [
+                    ref_num,
+                    va.unaided_distance_va_re if va.unaided_distance_va_re else "",
+                    va.unaided_distance_va_le if va.unaided_distance_va_le else "",
+                    va.unaided_near_va_re if va.unaided_near_va_re else "",
+                    va.unaided_near_va_le if va.unaided_near_va_le else "",
+                    va.aided_distance_va_re if va.aided_distance_va_re else "",
+                    va.aided_distance_va_le if va.aided_distance_va_le else "",
+                    va.aided_near_va_re if va.aided_near_va_re else "",
+                    va.aided_near_va_le if va.aided_near_va_le else "",
+                    va.ph_distance_va_re if va.ph_distance_va_re else "",
+                    getattr(va, 'ph_distance_va_le', getattr(va, 'pd_distance_va_le', ''))
+                ]
+
+                yield writer.writerow(row)
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="Visual_Acuity_Report.csv"'
+        return response
+
+
+class DiagnosisReportView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        school_filter = request.query_params.get('school', None)
+        participants = Participant.objects.all()
+
+        if school_filter and school_filter.strip():
+            clean_school = school_filter.strip()
+            fs_ref_numbers = Firstscreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            ss_ref_numbers = SecondScreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
+            participants = participants.filter(reference_number__in=matching_ref_numbers)
+
+        headers = ['Reference Number', 'Refractive Error Type', 'Affected Eye', 'Ocular Condition', 'Management Plan']
+
+        def stream_rows():
+            writer = csv.writer(Echo())
+            yield writer.writerow(headers)
+
+            for p in participants.iterator():
+                ref_num = str(p.reference_number).strip() if p.reference_number else ''
+                diag = Diagnosis.objects.filter(reference_number__iexact=ref_num).first()
+
+                if not diag:
+                    continue
+
+                management_str = ", ".join(diag.management_plan) if isinstance(diag.management_plan, list) else str(diag.management_plan or "")
+
+                row = [
+                    ref_num,
+                    diag.refractive_error_type if diag.refractive_error_type else "",
+                    diag.affected_eye if diag.affected_eye else "",
+                    diag.ocular_condition if diag.ocular_condition else "",
+                    management_str
+                ]
+
+                yield writer.writerow(row)
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="Diagnosis_Management_Report.csv"'
+        return response
+
+
+class PatientHistoryReportView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        school_filter = request.query_params.get('school', None)
+        participants = Participant.objects.all()
+
+        if school_filter and school_filter.strip():
+            clean_school = school_filter.strip()
+            fs_ref_numbers = Firstscreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            ss_ref_numbers = SecondScreening.objects.filter(
+                school__icontains=clean_school
+            ).values_list('reference_number', flat=True)
+            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
+            participants = participants.filter(reference_number__in=matching_ref_numbers)
+
+        headers = [
+            'Reference Number', 'Wears Spectacles', 'Lens Condition', 'Lens Material', 
+            'Lens Coating', 'Lens Type', 'Refractive Index', 'Glasses Source', 'Satisfaction',
+            'Current Medication', 'Medicine Name', 'Treatment Eye', 'Medicine Type', 'Frequency / Day',
+            'Family History Notes'
         ]
 
+        def stream_rows():
+            writer = csv.writer(Echo())
+            yield writer.writerow(headers)
 
-class PatientHistoryReportView(BaseCSVReportView):
-    filename = "Patient_Medical_History_Report.csv"
-    headers = [
-        'Reference Number', 'Wears Spectacles', 'Lens Condition', 'Lens Material', 
-        'Lens Coating', 'Lens Type', 'Refractive Index', 'Glasses Source', 'Satisfaction',
-        'Current Medication', 'Medicine Name', 'Treatment Eye', 'Medicine Type', 'Frequency / Day',
-        'Family History Notes'
-    ]
+            for p in participants.iterator():
+                ref_num = str(p.reference_number).strip() if p.reference_number else ''
+                spec_history = SpectacleHistory.objects.filter(reference_number__iexact=ref_num).first()
+                med_treatment = CurrentMedicalTreatment.objects.filter(reference_number__iexact=ref_num).first()
+                fam_history = FamilyHistory.objects.filter(reference_number__iexact=ref_num).first()
 
-    def get_row_data(self, p):
-        ref_num = str(p.reference_number).strip() if p.reference_number else ''
-        spec_history = SpectacleHistory.objects.filter(reference_number__iexact=ref_num).first()
-        med_treatment = CurrentMedicalTreatment.objects.filter(reference_number__iexact=ref_num).first()
-        fam_history = FamilyHistory.objects.filter(reference_number__iexact=ref_num).first()
+                if not spec_history and not med_treatment and not fam_history:
+                    continue
 
-        if not spec_history and not med_treatment and not fam_history:
-            return None
+                fam_notes = []
+                if fam_history:
+                    if getattr(fam_history, 'Hypertension', False): fam_notes.append("Hypertension")
+                    if getattr(fam_history, 'Diabetes', False): fam_notes.append("Diabetes")
+                    if getattr(fam_history, 'Cataract', False): fam_notes.append("Cataract")
+                    if getattr(fam_history, 'Glaucoma', False): fam_notes.append("Glaucoma")
+                    if getattr(fam_history, 'Other_text', None): fam_notes.append(f"Other: {fam_history.Other_text}")
 
-        fam_notes = []
-        if fam_history:
-            if fam_history.Hypertension: fam_notes.append("Hypertension")
-            if fam_history.Diabetes: fam_notes.append("Diabetes")
-            if fam_history.Cataract: fam_notes.append("Cataract")
-            if fam_history.Glaucoma: fam_notes.append("Glaucoma")
-            if fam_history.Other_text: fam_notes.append(f"Other: {fam_history.Other_text}")
+                row = [
+                    ref_num,
+                    spec_history.wears_spectacles if spec_history and spec_history.wears_spectacles else "",
+                    spec_history.lens_condition if spec_history and spec_history.lens_condition else "",
+                    spec_history.lens_material if spec_history and spec_history.lens_material else "",
+                    spec_history.lens_coating if spec_history and spec_history.lens_coating else "",
+                    spec_history.lens_type if spec_history and spec_history.lens_type else "",
+                    spec_history.refractive_index if spec_history and spec_history.refractive_index else "",
+                    spec_history.glasses_source if spec_history and spec_history.glasses_source else "",
+                    spec_history.satisfaction_level if spec_history and spec_history.satisfaction_level else "",
+                    med_treatment.medical_treatment if med_treatment and med_treatment.medical_treatment else "",
+                    med_treatment.medicine if med_treatment and med_treatment.medicine else "",
+                    med_treatment.treatment_eye if med_treatment and med_treatment.treatment_eye else "",
+                    med_treatment.medicine_type if med_treatment and med_treatment.medicine_type else "",
+                    med_treatment.times_per_day if med_treatment and med_treatment.times_per_day else "",
+                    ", ".join(fam_notes)
+                ]
 
-        return [
-            ref_num,
-            spec_history.wears_spectacles if spec_history else "",
-            spec_history.lens_condition if spec_history else "",
-            spec_history.lens_material if spec_history else "",
-            spec_history.lens_coating if spec_history else "",
-            spec_history.lens_type if spec_history else "",
-            spec_history.refractive_index if spec_history else "",
-            spec_history.glasses_source if spec_history else "",
-            spec_history.satisfaction_level if spec_history else "",
-            med_treatment.medical_treatment if med_treatment else "",
-            med_treatment.medicine if med_treatment else "",
-            med_treatment.treatment_eye if med_treatment else "",
-            med_treatment.medicine_type if med_treatment else "",
-            med_treatment.times_per_day if med_treatment else "",
-            ", ".join(fam_notes)
-        ]
+                yield writer.writerow(row)
+
+        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="Patient_Medical_History_Report.csv"'
+        return response
 
 # class SecondscreeningAPIView(APIView):
 #     authentication_classes = [TokenAuthentication]
@@ -2427,7 +2671,7 @@ class VisualAcuityMeasurementAPIView(APIView):
 
     def post(self, request):
         reference_number = request.data.get("reference_number")
-
+        screening_result = request.data.get('screening_result')  # Receives 'pass' or 'fail'
         if not reference_number:
             return Response(
                 {"message": "Reference number is required", "error": True},

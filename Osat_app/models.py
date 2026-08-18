@@ -927,6 +927,12 @@ class VisualAcuityMeasurement(models.Model):
     pd_distance_va_le = models.CharField(
         max_length=50, choices=VISUAL_ACUITY_DISTANCE_CHOICES, blank=True, null=True
     )
+    screening_result = models.CharField(
+        max_length=10, 
+        choices=[('pass', 'Pass'), ('fail', 'Fail'),('pending', 'Pending')], 
+        null=True, 
+        blank=True
+    )
     measure_visual_acuity = models.BooleanField(default=True)
 
     def __str__(self):
