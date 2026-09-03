@@ -76,7 +76,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "MEDA.wsgi.application"
 
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Updated origins covering all Android/Capacitor/Cordova webview variations
 CORS_ALLOWED_ORIGINS = [
@@ -120,7 +120,7 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 CORS_ALLOW_METHODS = list(default_methods)
 
 # Prevent 301 redirects on trailing slashes from stripping CORS headers
-APPEND_SLASH = False
+#APPEND_SLASH = False
 
 from corsheaders.defaults import default_headers
 
