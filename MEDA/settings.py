@@ -77,38 +77,53 @@ TEMPLATES = [
 WSGI_APPLICATION = "MEDA.wsgi.application"
 
 CORS_ORIGIN_ALLOW_ALL = False
-# The modern setting name (Recommended for Django 4.0+)
+
+# Updated origins covering all Android/Capacitor/Cordova webview variations
 CORS_ALLOWED_ORIGINS = [
-    "https://osaat.aei.org.za",  # <--- ADD THIS LINE
+    "https://osaat.aei.org.za",
     "http://localhost:8000",
     "http://localhost:8101",
-    "http://localhost",
-    "https://localhost",
-    "https://8c6d-110-227-190-178.ngrok-free.app",
-    "capacitor://localhost",
     "http://localhost:8102",
     "http://localhost:52380",
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "http://localhost",
+    "https://localhost",
+    "capacitor://localhost",
+    "capacitor://",                     # <--- ADD THIS (Capacitor default fallback)
+    "ionic://localhost",                # <--- ADD THIS (Ionic default fallback)
+    "https://8c6d-110-227-190-178.ngrok-free.app",
     "https://osaatapi.trickywebsolutions.com",
     "https://osaat-api-fwccdeftescfb9dk.southafricanorth-01.azurewebsites.net",
     "https://wonderful-cliff-0eb977310.7.azurestaticapps.net",
-    "http://localhost:4200",
-    "http://127.0.0.1:4200",
-    "http://192.168.0.128:4200", # If your frontend is running on this IP
+    "http://192.168.0.128:4200",
     "http://192.168.0.128:8000",
     "http://192.168.0.128",
-
 ]
 
-# The legacy setting name (Keep this for backward compatibility)
+# Legacy fallback
 CORS_ORIGIN_WHITELIST = tuple(CORS_ALLOWED_ORIGINS)
 
 CORS_ALLOW_CREDENTIALS = True
 
-from corsheaders.defaults import default_headers
+from corsheaders.defaults import default_headers, default_methods
 
+# Include standard and custom Angular headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
+    "content-type",
+    "x-requested-with",
+    "accept",
+    "origin",
 ]
+
+CORS_ALLOW_METHODS = list(default_methods)
+
+# Prevent 301 redirects on trailing slashes from stripping CORS headers
+APPEND_SLASH = False
+
+from corsheaders.defaults import default_headers
+
 
 CORS_ALLOW_METHODS = [
     "GET",
