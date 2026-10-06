@@ -170,7 +170,7 @@ class Firstscreening(models.Model):
 
     gender = models.CharField(
         max_length=10,
-        choices=[("male", "Male"), ("female", "Female")],
+        choices=[("male", "Male"), ("female", "Female"),  ("other", "Other")],
         null=True,
         blank=True,
     )
