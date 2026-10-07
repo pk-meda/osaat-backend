@@ -1817,6 +1817,7 @@ class IndividualPatientReportView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, reference_number, *args, **kwargs):
+
         reference_number = str(reference_number).strip()
 
         if not reference_number:
@@ -1843,128 +1844,208 @@ class IndividualPatientReportView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # ---------------------------------------------------------
+        # FIRST SCREENING
+        # ---------------------------------------------------------
+
         first_screening = Firstscreening.objects.filter(
             reference_number__iexact=reference_number
         ).first()
+
+        # ---------------------------------------------------------
+        # SECOND SCREENING
+        # ---------------------------------------------------------
 
         second_screening = SecondScreening.objects.filter(
             reference_number__iexact=reference_number
         ).first()
 
+        # ---------------------------------------------------------
+        # VISUAL ACUITY
+        # ---------------------------------------------------------
+
         visual_acuity = VisualAcuityMeasurement.objects.filter(
             reference_number__iexact=reference_number
         ).first()
+
+        # ---------------------------------------------------------
+        # REFRACTION EXAMINATION
+        # ---------------------------------------------------------
 
         refraction = RefractionExamination.objects.filter(
             reference_number__iexact=reference_number
         ).first()
 
+        # ---------------------------------------------------------
+        # DIAGNOSIS
+        # ---------------------------------------------------------
+
         diagnosis = Diagnosis.objects.filter(
             reference_number__iexact=reference_number
         ).first()
+
+        # ---------------------------------------------------------
+        # DISPENSING
+        # ---------------------------------------------------------
 
         dispensing = Dispensing.objects.filter(
             reference_number__iexact=reference_number
         ).order_by('-id').first()
 
+        # ---------------------------------------------------------
+        # PATIENT COMPLAINT
+        # ---------------------------------------------------------
+
         patient_complaint = PatientComplaint.objects.filter(
             reference_number__iexact=reference_number
         ).first()
+
+        # ---------------------------------------------------------
+        # SPECTACLE HISTORY
+        # ---------------------------------------------------------
 
         spectacle_history = SpectacleHistory.objects.filter(
             reference_number__iexact=reference_number
         ).first()
 
+        # ---------------------------------------------------------
+        # CURRENT MEDICAL TREATMENT
+        # ---------------------------------------------------------
+
         current_medical_treatment = CurrentMedicalTreatment.objects.filter(
             reference_number__iexact=reference_number
         ).first()
+
+        # ---------------------------------------------------------
+        # FAMILY HISTORY
+        # ---------------------------------------------------------
 
         family_history = FamilyHistory.objects.filter(
             reference_number__iexact=reference_number
         ).first()
 
+        # ---------------------------------------------------------
+        # SURGERY / TREATMENT HISTORY
+        # ---------------------------------------------------------
+
         surgery_treatment_history = SurgeryTreatmentHistory.objects.filter(
             reference_number__iexact=reference_number
         ).first()
 
-        comprehensive = Comprehensive.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
+        # ---------------------------------------------------------
+        # COMPREHENSIVE
+        # ---------------------------------------------------------
+        #
+        # Comprehensive only contains:
+        #   id
+        #   status
+        #
+        # It does NOT contain reference_number, therefore it cannot
+        # be queried directly using the participant reference number.
+        #
+        # We leave this as None until its actual relationship to the
+        # participant is established.
+        # ---------------------------------------------------------
+
+        comprehensive = None
+
+        # ---------------------------------------------------------
+        # COMPREHENSIVE EYE TEST
+        # ---------------------------------------------------------
 
         comprehensive_eye_test = ComprehensiveEyeTest.objects.filter(
             reference_number__iexact=reference_number
         ).first()
 
+        # ---------------------------------------------------------
+        # OTHER MEDICAL ISSUE
+        # ---------------------------------------------------------
+
         other_medical_issue = OtherMedicalIssueResponse.objects.filter(
             reference_number__iexact=reference_number
         ).first()
+
+        # ---------------------------------------------------------
+        # REFRACTION SPECTACLE
+        # ---------------------------------------------------------
 
         refraction_spectacle = RefractionSpectacle.objects.filter(
             reference_number__iexact=reference_number
         ).first()
 
+        # ---------------------------------------------------------
+        # BUILD REPORT
+        # ---------------------------------------------------------
+
         report = {
             "reference_number": reference_number,
 
-            "participant": ParticipantSerializer(participant).data
-            if participant else None,
+            "participant": ParticipantSerializer(
+                participant
+            ).data if participant else None,
 
-            "first_screening": FirstScreeningSerializer(first_screening).data
-            if first_screening else None,
+            "first_screening": FirstScreeningSerializer(
+                first_screening
+            ).data if first_screening else None,
 
-            "second_screening": SecondscreeningSerializer(second_screening).data
-            if second_screening else None,
+            "second_screening": SecondscreeningSerializer(
+                second_screening
+            ).data if second_screening else None,
 
-            "visual_acuity": VisualacuitySerializer(visual_acuity).data
-            if visual_acuity else None,
+            "visual_acuity": VisualacuitySerializer(
+                visual_acuity
+            ).data if visual_acuity else None,
 
-            "patient_complaint": PatientComplaintSerializer(patient_complaint).data
-            if patient_complaint else None,
+            "patient_complaint": PatientComplaintSerializer(
+                patient_complaint
+            ).data if patient_complaint else None,
 
-            "refraction": RefractionExaminationSerializer(refraction).data
-            if refraction else None,
+            "refraction": RefractionExaminationSerializer(
+                refraction
+            ).data if refraction else None,
 
-            "diagnosis": DiagnosisSerializer(diagnosis).data
-            if diagnosis else None,
+            "diagnosis": DiagnosisSerializer(
+                diagnosis
+            ).data if diagnosis else None,
 
-            "dispensing": DispensingSerializer(dispensing).data
-            if dispensing else None,
+            "dispensing": DispensingSerializer(
+                dispensing
+            ).data if dispensing else None,
 
-            "spectacle_history": SpectacleHistorySerializer(spectacle_history).data
-            if spectacle_history else None,
+            "spectacle_history": SpectacleHistorySerializer(
+                spectacle_history
+            ).data if spectacle_history else None,
 
             "current_medical_treatment": CurrentMedicalSerializer(
                 current_medical_treatment
-            ).data
-            if current_medical_treatment else None,
+            ).data if current_medical_treatment else None,
 
-            "family_history": FamilyHistorySerializer(family_history).data
-            if family_history else None,
+            "family_history": FamilyHistorySerializer(
+                family_history
+            ).data if family_history else None,
 
             "surgery_treatment_history": SurgeryTreatmentHistorySerializer(
                 surgery_treatment_history
-            ).data
-            if surgery_treatment_history else None,
+            ).data if surgery_treatment_history else None,
 
-            "comprehensive": ComprehensiveSerializer(comprehensive).data
-            if comprehensive else None,
+            "comprehensive": None,
 
             "comprehensive_eye_test": ComprehensiveEyeTestSerializer(
                 comprehensive_eye_test
-            ).data
-            if comprehensive_eye_test else None,
+            ).data if comprehensive_eye_test else None,
 
             "other_medical_issue": OtherMedicalIssueResponseSerializer(
                 other_medical_issue
-            ).data
-            if other_medical_issue else None,
+            ).data if other_medical_issue else None,
 
             "refraction_spectacle": RefractionSpectacleSerializer(
                 refraction_spectacle
-            ).data
-            if refraction_spectacle else None,
+            ).data if refraction_spectacle else None,
         }
-
+        print("========================================")
+        print("FINAL PATIENT REPORT")
+        print(report)
+        print("========================================")
         return Response(
             {
                 "body": report,
