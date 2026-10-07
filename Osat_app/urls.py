@@ -87,7 +87,7 @@ urlpatterns = [
     path('reports/spec-order-sheet/diagnoses/', views.DiagnosisReportView.as_view(), name='diagnosis_report'),
     path(
     'reports/patient/<str:reference_number>/',
-    IndividualPatientReportView.as_view(),
+    views.IndividualPatientReportView.as_view(),
     name='individual-patient-report'
 ),
 
