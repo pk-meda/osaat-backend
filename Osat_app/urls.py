@@ -85,6 +85,11 @@ urlpatterns = [
     path('reports/spec-order-sheet/screenings/', views.ScreeningReportView.as_view(), name='screening_report'),
     path('reports/spec-order-sheet/examinations/', views.ClinicalExaminationReportView.as_view(), name='clinical_examination_report'),
     path('reports/spec-order-sheet/diagnoses/', views.DiagnosisReportView.as_view(), name='diagnosis_report'),
+    path(
+    'reports/patient/<str:reference_number>/',
+    IndividualPatientReportView.as_view(),
+    name='individual-patient-report'
+),
 
     # Refresh Token Routes
     path('refresh-token/', TokenRefreshView.as_view(), name='token_refresh'),
