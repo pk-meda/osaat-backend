@@ -186,7 +186,11 @@ class UserLoginView(APIView):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response(
-                {"body": [], "message": "Invalid email or password", "error": True},
+                {
+                    "body": [],
+                    "message": "Invalid email or password",
+                    "error": True,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -195,21 +199,21 @@ class UserLoginView(APIView):
         if user:
             token, created = Token.objects.get_or_create(user=user)
 
-            # Serialize user info
-           user_data = {
-    "id": user.id,
-    "name": f"{user.first_name} {user.last_name}".strip(),
-    "email": user.email,
-    "mobile_number": user.username,
-
-    # Reporting permissions
-    "is_staff": user.is_staff,
-    "is_superuser": user.is_superuser,
-}
+            user_data = {
+                "id": user.id,
+                "name": f"{user.first_name} {user.last_name}".strip(),
+                "email": user.email,
+                "mobile_number": user.username,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+            }
 
             return Response(
                 {
-                    "body": {"token": token.key, "user": user_data},
+                    "body": {
+                        "token": token.key,
+                        "user": user_data,
+                    },
                     "message": "Login successful",
                     "error": False,
                 },
@@ -217,7 +221,11 @@ class UserLoginView(APIView):
             )
 
         return Response(
-            {"body": [], "message": "Invalid email or password", "error": True},
+            {
+                "body": [],
+                "message": "Invalid email or password",
+                "error": True,
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
