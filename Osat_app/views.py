@@ -654,11 +654,14 @@ class ComprehensiveAPIView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
 class ComprehensiveEyeTestAPIView(APIView):
+
     def get(self, request):
         """Retrieve all Comprehensive Eye Test records."""
         records = ComprehensiveEyeTest.objects.all()
         serializer = ComprehensiveEyeTestSerializer(records, many=True)
+
         return Response(
             {
                 "body": serializer.data,
@@ -671,44 +674,84 @@ class ComprehensiveEyeTestAPIView(APIView):
     def post(self, request):
         """Create or update a Comprehensive Eye Test record."""
         reference_number = request.data.get("reference_number")
+
         if not reference_number:
             return Response(
-                {"message": "Reference number is required", "error": True},
+                {
+                    "message": "Reference number is required",
+                    "error": True,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 1. Get all valid field names on the ComprehensiveEyeTest model
-        # This keeps the request clean and prevents unexpected DB crashes from extra payload keys
-        model_fields = {f.name for f in ComprehensiveEyeTest._meta.get_fields()}
-        
-        # 2. Build safe defaults containing only existing fields
-        safe_defaults = {
-            key: value for key, value in request.data.items()
-            if key in model_fields and key != 'reference_number'
-        }
+        # Find an existing record, if one exists.
+        instance = ComprehensiveEyeTest.objects.filter(
+            reference_number=reference_number
+        ).first()
 
-        # 3. Safely update or create the record
-        obj, created = ComprehensiveEyeTest.objects.update_or_create(
-            reference_number=reference_number,
-            defaults=safe_defaults,
+        # Check required fields when creating a new record.
+        if instance is None:
+            missing_fields = [
+                field
+                for field in (
+                    "left_eye_score",
+                    "right_eye_score",
+                    "test_result",
+                )
+                if request.data.get(field) is None
+                or request.data.get(field) == ""
+            ]
+
+            if missing_fields:
+                return Response(
+                    {
+                        "message": "Required eye-test fields are missing.",
+                        "missing_fields": missing_fields,
+                        "error": True,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        serializer = ComprehensiveEyeTestSerializer(
+            instance=instance,
+            data=request.data,
+            partial=True,
         )
 
-        # 4. Sync with Participant model if you track its overall status
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "message": "Eye-test validation failed.",
+                    "errors": serializer.errors,
+                    "error": True,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        obj = serializer.save()
+
         try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.comprehensive_eye_test = True  
-            participant.save()
+            participant = Participant.objects.get(
+                reference_number=reference_number
+            )
+            participant.comprehensive_eye_exam = True
+            participant.save(
+                update_fields=["comprehensive_eye_exam"]
+            )
         except Participant.DoesNotExist:
             pass
 
-        serializer = ComprehensiveEyeTestSerializer(obj)
         return Response(
             {
-                "body": serializer.data,
-                "message": "Eye test saved successfully" if created else "Eye test updated successfully",
+                "body": ComprehensiveEyeTestSerializer(obj).data,
+                "message": "Eye test saved successfully.",
                 "error": False,
             },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            status=(
+                status.HTTP_201_CREATED
+                if instance is None
+                else status.HTTP_200_OK
+            ),
         )
 
 # class Echo:
