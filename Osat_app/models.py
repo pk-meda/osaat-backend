@@ -374,9 +374,14 @@ class InitialEyeTest(models.Model):
 
     reference_number = models.CharField(max_length=50, unique=True)
     test_type = models.CharField(max_length=50, default="Snellen E Chart")
-    left_eye_score = models.FloatField()
-    right_eye_score = models.FloatField()
-    test_result = models.CharField(max_length=10, choices=TEST_RESULTS)
+    left_eye_score = models.CharField(null=True, blank=True)
+    right_eye_score = models.CharField(null=True, blank=True)
+    test_result = models.CharField(
+    max_length=10,
+    choices=TEST_RESULTS,
+    null=True,
+    blank=True
+)
 
     def __str__(self):
         return f"{self.reference_number} - {self.test_result}"
@@ -394,7 +399,12 @@ class RetestEyeTest(models.Model):
 
     reference_number = models.CharField(max_length=50, unique=True)
     test_type = models.CharField(max_length=50, default="Snellen E Chart")
-    test_result = models.CharField(max_length=10, choices=TEST_RESULTS)
+    test_result = models.CharField(
+    max_length=10,
+    choices=TEST_RESULTS,
+    null=True,
+    blank=True
+)
 
     def __str__(self):
         return f"{self.reference_number} - {self.test_result}"
@@ -413,10 +423,15 @@ class ComprehensiveEyeTest(models.Model):
 
     # Existing fields
     reference_number = models.CharField(max_length=50, unique=True)
-    left_eye_score = models.FloatField()
-    right_eye_score = models.FloatField()
+    left_eye_score = models.CharField(null=True, blank=True)
+    right_eye_score = models.CharField(null=True, blank=True)
     additional_ocular_complaints = models.BooleanField(default=False)
-    test_result = models.CharField(max_length=10, choices=TEST_RESULTS)
+    test_result = models.CharField(
+    max_length=10,
+    choices=TEST_RESULTS,
+    null=True,
+    blank=True
+)
 
     # --- NEWLY ADDED FIELDS ---
     testing_distance_meters = models.FloatField(default=3.0)
