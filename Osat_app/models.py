@@ -5,7 +5,6 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.timezone import now
-from django.utils import timezone
 from multiselectfield import MultiSelectField
 
 User = get_user_model()
@@ -99,7 +98,7 @@ class Participant(models.Model):
 #             ('Has spectacles and is currently wearing them', 'Has spectacles and is currently wearing them'),
 #             ('Has spectacles but not wearing them', 'Has spectacles but not wearing them'),
 #             ('Spactacles not wearing', 'Spactacles not wearing'),
-#             ('Other', 'Other '),
+#             ('Has worn spectacles in the past', 'Has worn spectacles in the past '),
 #             ('Has spectacles but not wearing and not in their possession', 'Has spectacles but not wearing and not in their possession '),
 #             ('Has previously worn spectacles but no longer has spectacles', 'Has previously worn spectacles but no longer has spectacles '),
 #             ('Has never worn spectacles before', 'Has never worn spectacles before ')
@@ -135,7 +134,7 @@ class Participant(models.Model):
 #             ('Has spectacles and is currently wearing them', 'Has spectacles and is currently wearing them'),
 #             ('Has spectacles but not wearing them', 'Has spectacles but not wearing them'),
 #             ('Spactacles not wearing', 'Spactacles not wearing'),
-#             ('Other', 'Other'),
+#             ('Has worn spectacles in the past', 'Has worn spectacles in the past'),
 #             ('Has spectacles but not wearing and not in their possession', 'Has spectacles but not wearing and not in their possession'),
 #             ('Has previously worn spectacles but no longer has spectacles', 'Has previously worn spectacles but no longer has spectacles'),
 #             ('Has never worn spectacles before', 'Has never worn spectacles before')
@@ -170,8 +169,8 @@ class Firstscreening(models.Model):
     grade = models.CharField(max_length=10, null=True, blank=True)
 
     gender = models.CharField(
-        max_length=50,
-        choices=[("male", "Male"), ("female", "Female"),  ("other", "Other"),  ("prefer not to say", "prefer not to say")],
+        max_length=10,
+        choices=[("male", "Male"), ("female", "Female"),  ("other", "Other")],
         null=True,
         blank=True,
     )
@@ -191,8 +190,8 @@ class Firstscreening(models.Model):
             ),
             ("Spectacles not wearing", "Spectacles not wearing"),
             (
-                "Other",
-                "Other",
+                "Has worn spectacles in the past",
+                "Has worn spectacles in the past",
             ),
             (
                 "Has spectacles but not wearing and not in their possession",
@@ -1181,33 +1180,25 @@ class RefractionSpectacle(models.Model):
 
 
 class PatientComplaint(models.Model):
-    CATEGORY_CHOICES = [
-        ("VISION_COMPLAINTS", "Vision Complaints"),
-        ("DISCOMFORT", "Discomfort"),
-        ("SIGNS_AND_SYMPTOMS", "Signs and Symptoms"),
-        ("OBSERVED_BEHAVIORS", "Observed Behaviors"),
+    COMPLAINT_CHOICES = [
+        ("NO COMPLAINTS/observations", "NO COMPLAINTS/observations"),
+        ("BLURRING", "BLURRING"),
+        ("HEADACHE", "HEADACHE"),
+        ("WATERING", "WATERING"),
+        ("REDNESS", "REDNESS"),
+        ("BURNING SENSATION", "BURNING SENSATION"),
+        ("ITCHING", "ITCHING"),
+        ("SQUEEZING", "SQUEEZING"),
+        ("PAIN", "PAIN"),
+        ("REPEATED EYE SWELLING", "REPEATED EYE SWELLING"),
+        ("SQUINTING", "SQUINTING"),
+        ("DROOPING OF THE LID", "DROOPING OF THE LID"),
+        ("ABNORMAL EYE MOVEMENT", "ABNORMAL EYE MOVEMENT"),
+        ("NIGHT BLINDNESS", "NIGHT BLINDNESS"),
     ]
 
-    EYE_SIDE_CHOICES = [
-        ("RE", "Right Eye (RE)"),
-        ("LE", "Left Eye (LE)"),
-        ("BOTH", "Both"),
-        ("UNKNOWN", "Not sure"),
-    ]
-
-    ONSET_CHOICES = [
-        ("SUDDEN", "Sudden"),
-        ("GRADUAL", "Gradual"),
-        ("UNKNOWN", "Unknown"),
-    ]
-
-    REPORTER_CHOICES = [
-        ("SELF", "Student / Patient"),
-        ("TEACHER", "Teacher"),
-        ("PARENT", "Parent / Guardian"),
-        ("SCREENER", "Screener / Examiner"),
-    ]
-
+    selected_complaint = models.TextField(null=True, blank=True)
+    effected_eye = models.CharField(max_length=50, null=True, blank=True)
     reference_number = models.CharField(max_length=100, unique=True, blank=True)
     created_by = models.ForeignKey(
         User,
@@ -1217,55 +1208,17 @@ class PatientComplaint(models.Model):
         blank=True,
     )
 
-    # Top-level flag when no ocular complaints/observations exist
-    no_concerns = models.BooleanField(default=False)
+    def set_complaints(self, complaints):
+        """
+        Sets the complaints as a comma-separated string.
+        """
+        self.selected_complaint = ",".join(complaints)
 
-    # Structured list of selected complaints with metadata:
-    # [
-    #   {
-    #     "category": "VISION_COMPLAINTS",
-    #     "label": "BLURRING",
-    #     "eye_side": "RE",
-    #     "onset": "GRADUAL",
-    #     "duration": "2 weeks",
-    #     "reporter": "SELF"
-    #   }, ...
-    # ]
-    complaints_data = models.JSONField(default=list, blank=True)
-
-    # Structured "Other" complaint object (or null if unselected):
-    # {
-    #   "selected": True,
-    #   "description": "Double vision when reading",
-    #   "eye_side": "BOTH",
-    #   "onset": "SUDDEN",
-    #   "duration": "3 days",
-    #   "reporter": "TEACHER"
-    # }
-    other_complaint = models.JSONField(null=True, blank=True)
-
-    # Preserved from existing form ("2. Any other health complaints / physical disability?")
-    physical_disability = models.TextField(null=True, blank=True)
-
-    # Legacy fields kept optional for backward compatibility during migration
-    selected_complaint = models.TextField(null=True, blank=True)
-    effected_eye = models.CharField(max_length=50, null=True, blank=True)
-
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def save(self, *args, **kwargs):
-        # Auto-sync legacy flat text field for reporting backwards compatibility
-        if self.no_concerns:
-            self.selected_complaint = "NO CONCERNS"
-            self.complaints_data = []
-            self.other_complaint = None
-        else:
-            labels = [item.get("label", "") for item in (self.complaints_data or [])]
-            if self.other_complaint and self.other_complaint.get("selected"):
-                labels.append(f"OTHER: {self.other_complaint.get('description', '')}")
-            self.selected_complaint = ",".join(filter(None, labels))
-        super().save(*args, **kwargs)
+    def get_complaints(self):
+        """
+        Returns a list of complaints from the comma-separated string.
+        """
+        return self.selected_complaint.split(",") if self.selected_complaint else []
 
     def __str__(self):
-        return f"Complaints ({self.reference_number}): {self.selected_complaint}"
+        return f"Complaints: {self.selected_complaint}"
