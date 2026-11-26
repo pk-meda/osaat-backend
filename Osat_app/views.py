@@ -549,22 +549,476 @@ class FirstScreeningAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+COUNTRY_CODE_MAP = {
+    "AF": "AFG",
+    "AFGHANISTAN": "AFG",
+    "AL": "ALB",
+    "ALBANIA": "ALB",
+    "DZ": "DZA",
+    "ALGERIA": "DZA",
+    "AD": "AND",
+    "ANDORRA": "AND",
+    "AO": "AGO",
+    "ANGOLA": "AGO",
+    "AG": "ATG",
+    "ANTIGUA AND BARBUDA": "ATG",
+    "AR": "ARG",
+    "ARGENTINA": "ARG",
+    "AM": "ARM",
+    "ARMENIA": "ARM",
+    "AU": "AUS",
+    "AUSTRALIA": "AUS",
+    "AT": "AUT",
+    "AUSTRIA": "AUT",
+    "AZ": "AZE",
+    "AZERBAIJAN": "AZE",
+    "BS": "BHS",
+    "BAHAMAS": "BHS",
+    "THE BAHAMAS": "BHS",
+    "BH": "BHR",
+    "BAHRAIN": "BHR",
+    "BD": "BGD",
+    "BANGLADESH": "BGD",
+    "BB": "BRB",
+    "BARBADOS": "BRB",
+    "BY": "BLR",
+    "BELARUS": "BLR",
+    "BE": "BEL",
+    "BELGIUM": "BEL",
+    "BZ": "BLZ",
+    "BELIZE": "BLZ",
+    "BJ": "BEN",
+    "BENIN": "BEN",
+    "BT": "BTN",
+    "BHUTAN": "BTN",
+    "BO": "BOL",
+    "BOLIVIA": "BOL",
+    "BOLIVIA (PLURINATIONAL STATE OF)": "BOL",
+    "BA": "BIH",
+    "BOSNIA AND HERZEGOVINA": "BIH",
+    "BW": "BWA",
+    "BOTSWANA": "BWA",
+    "BR": "BRA",
+    "BRAZIL": "BRA",
+    "BN": "BRN",
+    "BRUNEI DARUSSALAM": "BRN",
+    "BRUNEI": "BRN",
+    "BG": "BGR",
+    "BULGARIA": "BGR",
+    "BF": "BFA",
+    "BURKINA FASO": "BFA",
+    "BI": "BDI",
+    "BURUNDI": "BDI",
+    "CV": "CPV",
+    "CABO VERDE": "CPV",
+    "CAPE VERDE": "CPV",
+    "KH": "KHM",
+    "CAMBODIA": "KHM",
+    "CM": "CMR",
+    "CAMEROON": "CMR",
+    "CA": "CAN",
+    "CANADA": "CAN",
+    "CF": "CAF",
+    "CENTRAL AFRICAN REPUBLIC": "CAF",
+    "TD": "TCD",
+    "CHAD": "TCD",
+    "CL": "CHL",
+    "CHILE": "CHL",
+    "CN": "CHN",
+    "CHINA": "CHN",
+    "CO": "COL",
+    "COLOMBIA": "COL",
+    "KM": "COM",
+    "COMOROS": "COM",
+    "CG": "COG",
+    "CONGO": "COG",
+    "REPUBLIC OF THE CONGO": "COG",
+    "CD": "COD",
+    "DEMOCRATIC REPUBLIC OF THE CONGO": "COD",
+    "DRC": "COD",
+    "CR": "CRI",
+    "COSTA RICA": "CRI",
+    "CI": "CIV",
+    "CÔTE D'IVOIRE": "CIV",
+    "COTE DIVOIRE": "CIV",
+    "IVORY COAST": "CIV",
+    "HR": "HRV",
+    "CROATIA": "HRV",
+    "CU": "CUB",
+    "CUBA": "CUB",
+    "CY": "CYP",
+    "CYPRUS": "CYP",
+    "CZ": "CZE",
+    "CZECHIA": "CZE",
+    "CZECH REPUBLIC": "CZE",
+    "DK": "DNK",
+    "DENMARK": "DNK",
+    "DJ": "DJI",
+    "DJIBOUTI": "DJI",
+    "DM": "DMA",
+    "DOMINICA": "DMA",
+    "DO": "DOM",
+    "DOMINICAN REPUBLIC": "DOM",
+    "EC": "ECU",
+    "ECUADOR": "ECU",
+    "EG": "EGY",
+    "EGYPT": "EGY",
+    "SV": "SLV",
+    "EL SALVADOR": "SLV",
+    "GQ": "GNQ",
+    "EQUATORIAL GUINEA": "GNQ",
+    "ER": "ERI",
+    "ERITREA": "ERI",
+    "EE": "EST",
+    "ESTONIA": "EST",
+    "SZ": "SWZ",
+    "ESWATINI": "SWZ",
+    "SWAZILAND": "SWZ",
+    "ET": "ETH",
+    "ETHIOPIA": "ETH",
+    "FJ": "FJI",
+    "FIJI": "FJI",
+    "FI": "FIN",
+    "FINLAND": "FIN",
+    "FR": "FRA",
+    "FRANCE": "FRA",
+    "GA": "GAB",
+    "GABON": "GAB",
+    "GM": "GMB",
+    "GAMBIA": "GMB",
+    "THE GAMBIA": "GMB",
+    "GE": "GEO",
+    "GEORGIA": "GEO",
+    "DE": "DEU",
+    "GERMANY": "DEU",
+    "GH": "GHA",
+    "GHANA": "GHA",
+    "GR": "GRC",
+    "GREECE": "GRC",
+    "GD": "GRD",
+    "GRENADA": "GRD",
+    "GT": "GTM",
+    "GUATEMALA": "GTM",
+    "GN": "GIN",
+    "GUINEA": "GIN",
+    "GW": "GNB",
+    "GUINEA-BISSAU": "GNB",
+    "GY": "GUY",
+    "GUYANA": "GUY",
+    "HT": "HTI",
+    "HAITI": "HTI",
+    "HN": "HND",
+    "HONDURAS": "HND",
+    "HU": "HUN",
+    "HUNGARY": "HUN",
+    "IS": "ISL",
+    "ICELAND": "ISL",
+    "IN": "IND",
+    "INDIA": "IND",
+    "ID": "IDN",
+    "INDONESIA": "IDN",
+    "IR": "IRN",
+    "IRAN": "IRN",
+    "IRAN (ISLAMIC REPUBLIC OF)": "IRN",
+    "IQ": "IRQ",
+    "IRAQ": "IRQ",
+    "IE": "IRL",
+    "IRELAND": "IRL",
+    "IL": "ISR",
+    "ISRAEL": "ISR",
+    "IT": "ITA",
+    "ITALY": "ITA",
+    "JM": "JAM",
+    "JAMAICA": "JAM",
+    "JP": "JPN",
+    "JAPAN": "JPN",
+    "JO": "JOR",
+    "JORDAN": "JOR",
+    "KZ": "KAZ",
+    "KAZAKHSTAN": "KAZ",
+    "KE": "KEN",
+    "KENYA": "KEN",
+    "KI": "KIR",
+    "KIRIBATI": "KIR",
+    "KP": "PRK",
+    "NORTH KOREA": "PRK",
+    "DEMOCRATIC PEOPLE'S REPUBLIC OF KOREA": "PRK",
+    "KR": "KOR",
+    "SOUTH KOREA": "KOR",
+    "REPUBLIC OF KOREA": "KOR",
+    "XK": "XKX",
+    "KOSOVO": "XKX",
+    "KW": "KWT",
+    "KUWAIT": "KWT",
+    "KG": "KGZ",
+    "KYRGYZSTAN": "KGZ",
+    "LA": "LAO",
+    "LAOS": "LAO",
+    "LAO PEOPLE'S DEMOCRATIC REPUBLIC": "LAO",
+    "LV": "LVA",
+    "LATVIA": "LVA",
+    "LB": "LBN",
+    "LEBANON": "LBN",
+    "LS": "LSO",
+    "LESOTHO": "LSO",
+    "LR": "LBR",
+    "LIBERIA": "LBR",
+    "LY": "LBY",
+    "LIBYA": "LBY",
+    "LI": "LIE",
+    "LIECHTENSTEIN": "LIE",
+    "LT": "LTU",
+    "LITHUANIA": "LTU",
+    "LU": "LUX",
+    "LUXEMBOURG": "LUX",
+    "MG": "MDG",
+    "MADAGASCAR": "MDG",
+    "MW": "MWI",
+    "MALAWI": "MWI",
+    "MY": "MYS",
+    "MALAYSIA": "MYS",
+    "MV": "MDV",
+    "MALDIVES": "MDV",
+    "ML": "MLI",
+    "MALI": "MLI",
+    "MT": "MLT",
+    "MALTA": "MLT",
+    "MH": "MHL",
+    "MARSHALL ISLANDS": "MHL",
+    "MR": "MRT",
+    "MAURITANIA": "MRT",
+    "MU": "MUS",
+    "MAURITIUS": "MUS",
+    "MX": "MEX",
+    "MEXICO": "MEX",
+    "FM": "FSM",
+    "MICRONESIA": "FSM",
+    "MICRONESIA (FEDERATED STATES OF)": "FSM",
+    "MD": "MDA",
+    "MOLDOVA": "MDA",
+    "REPUBLIC OF MOLDOVA": "MDA",
+    "MC": "MCO",
+    "MONACO": "MCO",
+    "MN": "MNG",
+    "MONGOLIA": "MNG",
+    "ME": "MNE",
+    "MONTENEGRO": "MNE",
+    "MA": "MAR",
+    "MOROCCO": "MAR",
+    "MZ": "MOZ",
+    "MOZAMBIQUE": "MOZ",
+    "MM": "MMR",
+    "MYANMAR": "MMR",
+    "BURMA": "MMR",
+    "NA": "NAM",
+    "NAMIBIA": "NAM",
+    "NR": "NRU",
+    "NAURU": "NRU",
+    "NP": "NPL",
+    "NEPAL": "NPL",
+    "NL": "NLD",
+    "NETHERLANDS": "NLD",
+    "THE NETHERLANDS": "NLD",
+    "NZ": "NZL",
+    "NEW ZEALAND": "NZL",
+    "NI": "NIC",
+    "NICARAGUA": "NIC",
+    "NE": "NER",
+    "NIGER": "NER",
+    "NG": "NGA",
+    "NIGERIA": "NGA",
+    "MK": "MKD",
+    "NORTH MACEDONIA": "MKD",
+    "NO": "NOR",
+    "NORWAY": "NOR",
+    "OM": "OMN",
+    "OMAN": "OMN",
+    "PK": "PAK",
+    "PAKISTAN": "PAK",
+    "PW": "PLW",
+    "PALAU": "PLW",
+    "PS": "PSE",
+    "PALESTINE": "PSE",
+    "STATE OF PALESTINE": "PSE",
+    "PA": "PAN",
+    "PANAMA": "PAN",
+    "PG": "PNG",
+    "PAPUA NEW GUINEA": "PNG",
+    "PY": "PRY",
+    "PARAGUAY": "PRY",
+    "PE": "PER",
+    "PERU": "PER",
+    "PH": "PHL",
+    "PHILIPPINES": "PHL",
+    "THE PHILIPPINES": "PHL",
+    "PL": "POL",
+    "POLAND": "POL",
+    "PT": "PRT",
+    "PORTUGAL": "PRT",
+    "QA": "QAT",
+    "QATAR": "QAT",
+    "RO": "ROU",
+    "ROMANIA": "ROU",
+    "RU": "RUS",
+    "RUSSIA": "RUS",
+    "RUSSIAN FEDERATION": "RUS",
+    "RW": "RWA",
+    "RWANDA": "RWA",
+    "KN": "KNA",
+    "SAINT KITTS AND NEVIS": "KNA",
+    "LC": "LCA",
+    "SAINT LUCIA": "LCA",
+    "VC": "VCT",
+    "SAINT VINCENT AND THE GRENADINES": "VCT",
+    "WS": "WSM",
+    "SAMOA": "WSM",
+    "SM": "SMR",
+    "SAN MARINO": "SMR",
+    "ST": "STP",
+    "SAO TOME AND PRINCIPE": "STP",
+    "SÃO TOMÉ AND PRÍNCIPE": "STP",
+    "SA": "SAU",
+    "SAUDI ARABIA": "SAU",
+    "SN": "SEN",
+    "SENEGAL": "SEN",
+    "RS": "SRB",
+    "SERBIA": "SRB",
+    "SC": "SYC",
+    "SEYCHELLES": "SYC",
+    "SL": "SLE",
+    "SIERRA LEONE": "SLE",
+    "SG": "SGP",
+    "SINGAPORE": "SGP",
+    "SK": "SVK",
+    "SLOVAKIA": "SVK",
+    "SI": "SVN",
+    "SLOVENIA": "SVN",
+    "SB": "SLB",
+    "SOLOMON ISLANDS": "SLB",
+    "SO": "SOM",
+    "SOMALIA": "SOM",
+    "ZA": "ZAF",
+    "SOUTH AFRICA": "ZAF",
+    "SS": "SSD",
+    "SOUTH SUDAN": "SSD",
+    "ES": "ESP",
+    "SPAIN": "ESP",
+    "LK": "LKA",
+    "SRI LANKA": "LKA",
+    "SD": "SDN",
+    "SUDAN": "SDN",
+    "SR": "SUR",
+    "SURINAME": "SUR",
+    "SE": "SWE",
+    "SWEDEN": "SWE",
+    "CH": "CHE",
+    "SWITZERLAND": "CHE",
+    "SY": "SYR",
+    "SYRIA": "SYR",
+    "SYRIAN ARAB REPUBLIC": "SYR",
+    "TW": "TWN",
+    "TAIWAN": "TWN",
+    "TJ": "TJK",
+    "TAJIKISTAN": "TJK",
+    "TZ": "TZA",
+    "TANZANIA": "TZA",
+    "UNITED REPUBLIC OF TANZANIA": "TZA",
+    "TH": "THA",
+    "THAILAND": "THA",
+    "TL": "TLS",
+    "TIMOR-LESTE": "TLS",
+    "EAST TIMOR": "TLS",
+    "TG": "TGO",
+    "TOGO": "TGO",
+    "TO": "TON",
+    "TONGA": "TON",
+    "TT": "TTO",
+    "TRINIDAD AND TOBAGO": "TTO",
+    "TN": "TUN",
+    "TUNISIA": "TUN",
+    "TR": "TUR",
+    "TURKEY": "TUR",
+    "TÜRKIYE": "TUR",
+    "TURKIYE": "TUR",
+    "TM": "TKM",
+    "TURKMENISTAN": "TKM",
+    "TV": "TUV",
+    "TUVALU": "TUV",
+    "UG": "UGA",
+    "UGANDA": "UGA",
+    "UA": "UKR",
+    "UKRAINE": "UKR",
+    "AE": "ARE",
+    "UNITED ARAB EMIRATES": "ARE",
+    "UAE": "ARE",
+    "GB": "GBR",
+    "UK": "GBR",
+    "UNITED KINGDOM": "GBR",
+    "US": "USA",
+    "USA": "USA",
+    "UNITED STATES": "USA",
+    "UNITED STATES OF AMERICA": "USA",
+    "UY": "URY",
+    "URUGUAY": "URY",
+    "UZ": "UZB",
+    "UZBEKISTAN": "UZB",
+    "VU": "VUT",
+    "VANUATU": "VUT",
+    "VA": "VAT",
+    "VATICAN CITY": "VAT",
+    "HOLY SEE": "VAT",
+    "VE": "VEN",
+    "VENEZUELA": "VEN",
+    "VENEZUELA (BOLIVARIAN REPUBLIC OF)": "VEN",
+    "VN": "VNM",
+    "VIETNAM": "VNM",
+    "VIET NAM": "VNM",
+    "YE": "YEM",
+    "YEMEN": "YEM",
+    "ZM": "ZMB",
+    "ZAMBIA": "ZMB",
+    "ZW": "ZWE",
+    "ZIMBABWE": "ZWE",
+}
+
+
+def resolve_country_prefix(data) -> str:
+    raw_code = str(data.get("country_code") or "").strip().upper()
+    raw_country = str(data.get("country") or "").strip().upper()
+
+    for candidate in (raw_code, raw_country):
+        if candidate in COUNTRY_CODE_MAP:
+            return COUNTRY_CODE_MAP[candidate]
+
+    cleaned = "".join(ch for ch in (raw_code or raw_country) if ch.isalpha())
+    if len(cleaned) >= 3:
+        return cleaned[:3]
+    if len(cleaned) > 0:
+        return cleaned
+    return "SS"
+
+
+class FirstScreeningAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         serializer = FirstScreeningSerializer(data=request.data)
-        
+
         if serializer.is_valid():
             try:
                 with transaction.atomic():
-                    # Extract or generate unique reference number
                     ref_num = request.data.get("reference_number")
                     if not ref_num or ref_num == "":
-                        ref_num = f"SS-{uuid.uuid4().hex[:8].upper()}"
-                        
+                        prefix = resolve_country_prefix(request.data)
+                        ref_num = f"{prefix}-{uuid.uuid4().hex[:8].upper()}"
+                        while Firstscreening.objects.filter(reference_number=ref_num).exists():
+                            ref_num = f"{prefix}-{uuid.uuid4().hex[:8].upper()}"
 
                     # 1. Save FirstScreening instance with reference_number
                     first_screening = serializer.save(
                         created_by=request.user,
-                        reference_number=ref_num
+                        reference_number=ref_num,
                     )
 
                     # 2. Safely get or create the linked Participant record
@@ -573,7 +1027,7 @@ class FirstScreeningAPIView(APIView):
                         defaults={
                             "created_by": request.user,
                             "first_screening": True,
-                        }
+                        },
                     )
 
                     if not created:
@@ -595,7 +1049,6 @@ class FirstScreeningAPIView(APIView):
                     )
 
             except Exception as e:
-                # Catches internal DB errors and returns explicit error context instead of crash 500
                 return Response(
                     {
                         "body": str(e),
@@ -702,2814 +1155,4 @@ class ComprehensiveEyeTestAPIView(APIView):
                 or request.data.get(field) == ""
             ]
 
-            if missing_fields:
-                return Response(
-                    {
-                        "message": "Required eye-test fields are missing.",
-                        "missing_fields": missing_fields,
-                        "error": True,
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        serializer = ComprehensiveEyeTestSerializer(
-            instance=instance,
-            data=request.data,
-            partial=True,
-        )
-
-        if not serializer.is_valid():
-            return Response(
-                {
-                    "message": "Eye-test validation failed.",
-                    "errors": serializer.errors,
-                    "error": True,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        obj = serializer.save()
-
-        try:
-            participant = Participant.objects.get(
-                reference_number=reference_number
-            )
-            participant.comprehensive_eye_exam = True
-            participant.save(
-                update_fields=["comprehensive_eye_exam"]
-            )
-        except Participant.DoesNotExist:
-            pass
-
-        return Response(
-            {
-                "body": ComprehensiveEyeTestSerializer(obj).data,
-                "message": "Eye test saved successfully.",
-                "error": False,
-            },
-            status=(
-                status.HTTP_201_CREATED
-                if instance is None
-                else status.HTTP_200_OK
-            ),
-        )
-
-# class Echo:
-#     """An object that implements just the write method of the file-like interface."""
-#     def write(self, value):
-#         return value
-
-# class SpecOrderReportView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, *args, **kwargs):
-#         school_filter = request.query_params.get('school', None)
-
-#         participants = Participant.objects.all()
-
-#         if school_filter and school_filter.strip():
-#             clean_school = school_filter.strip()
-
-#             # 1. Collect reference numbers from FirstScreening matching the school name
-#             fs_ref_numbers = Firstscreening.objects.filter(
-#                 school__icontains=clean_school
-#             ).values_list('reference_number', flat=True)
-
-#             # 2. Collect reference numbers from SecondScreening matching the school name
-#             ss_ref_numbers = SecondScreening.objects.filter(
-#                 school__icontains=clean_school
-#             ).values_list('reference_number', flat=True)
-
-#             # 3. Combine both sets of reference numbers
-#             matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
-
-#             # 4. Filter participants by these reference numbers
-#             participants = participants.filter(reference_number__in=matching_ref_numbers)
-
-#         headers = [
-#             'Reference Number', 'Screening Date', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade',
-#             'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)',
-#             'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)',
-#             'Frame Choice', 'Lenses Type', 'PD Distance', 'Comments'
-#         ]
-
-#         def stream_rows():
-#             # Write CSV header row
-#             writer = csv.writer(Echo())
-#             yield writer.writerow(headers)
-
-#             for p in participants.iterator():
-#                 ref_num = str(p.reference_number).strip() if p.reference_number else ''
-
-#                 # 1. First Screening lookup
-#                 fs = (
-#                     (hasattr(p, 'first_screenings') and p.first_screenings.first()) or
-#                     Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
-#                 )
-
-#                 # 2. Second Screening lookup
-#                 ss = (
-#                     (hasattr(p, 'second_screenings') and p.second_screenings.first()) or
-#                     SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
-#                 )
-
-#                 # 3. Refraction Examination lookup
-#                 refraction = RefractionExamination.objects.filter(
-#                     reference_number__iexact=ref_num
-#                 ).first()
-
-#                 # 4. Robust Dispensing lookup:
-#                 dispensing = (
-#                     (hasattr(p, 'dispensings') and p.dispensings.order_by('-id').first()) or
-#                     Dispensing.objects.filter(participant=p).order_by('-id').first() or
-#                     Dispensing.objects.filter(reference_number__iexact=ref_num).order_by('-id').first()
-#                 )
-
-#                 # Extract screening date safely (checks created_at / date / date_created across FS and SS)
-#                 screening_obj = fs or ss
-#                 created_at_val = getattr(screening_obj, 'created_at', None) or getattr(screening_obj, 'date_created', None) or getattr(screening_obj, 'date', None)
-                
-#                 if created_at_val:
-#                     # Format as YYYY-MM-DD if it's a datetime/date object
-#                     screening_date = created_at_val.strftime('%Y-%m-%d') if hasattr(created_at_val, 'strftime') else str(created_at_val)
-#                 else:
-#                     screening_date = ""
-
-#                 # Safely extract participant & screening fields
-#                 name = ss.name if ss and ss.name else ""
-#                 surname = ss.surname if ss and ss.surname else ""
-#                 age = fs.age if fs and fs.age is not None else ""
-#                 gender = fs.gender if fs and fs.gender else ""
-#                 school_name = (
-#                     (ss.school if ss and ss.school else None) or 
-#                     (fs.school if fs and fs.school else "")
-#                 )
-#                 grade = fs.grade if fs and fs.grade else ""
-
-#                 # Extract dispensing fields safely
-#                 frame_choice = dispensing.frame_choice if dispensing and dispensing.frame_choice else ""
-#                 lenses_type = dispensing.lenses_type if dispensing and dispensing.lenses_type else ""
-#                 pd_distance = dispensing.pd_distance if dispensing and dispensing.pd_distance else ""
-#                 comments = dispensing.comments if dispensing and dispensing.comments else ""
-
-#                 row = [
-#                     ref_num,
-#                     screening_date,
-#                     name,
-#                     surname,
-#                     age,
-#                     gender,
-#                     school_name,
-#                     grade,
-#                     refraction.sph_RE_final if refraction and refraction.sph_RE_final else "",
-#                     refraction.cyl_RE_final if refraction and refraction.cyl_RE_final else "",
-#                     refraction.axis_RE_final if refraction and refraction.axis_RE_final else "",
-#                     refraction.sph_LE_final if refraction and refraction.sph_LE_final else "",
-#                     refraction.cyl_LE_final if refraction and refraction.cyl_LE_final else "",
-#                     refraction.axis_LE_final if refraction and refraction.axis_LE_final else "",
-#                     frame_choice,
-#                     lenses_type,
-#                     pd_distance,
-#                     comments
-#                 ]
-
-#                 yield writer.writerow(row)
-
-#         response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
-#         response['Content-Disposition'] = 'attachment; filename="spec_order_sheet.csv"'
-#         return response
-        
-
-class ReportMetricsView(APIView):
-    """Provides exact counts for the frontend dashboard tabs, filterable by school."""
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        school_filter = request.query_params.get('school', None)
-        
-        participants = Participant.objects.all()
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_refs = Firstscreening.objects.filter(school__icontains=clean_school).values_list('reference_number', flat=True)
-            ss_refs = SecondScreening.objects.filter(school__icontains=clean_school).values_list('reference_number', flat=True)
-            matching_refs = set(fs_refs).union(set(ss_refs))
-            participants = participants.filter(reference_number__in=matching_refs)
-
-        ref_list = participants.values_list('reference_number', flat=True)
-
-        return Response({
-            "total_participants": participants.count(),
-            "total_screenings": Firstscreening.objects.filter(reference_number__in=ref_list).count(),
-            "total_dispensing": Dispensing.objects.filter(reference_number__in=ref_list).count(),
-            "total_refractions": RefractionExamination.objects.filter(reference_number__in=ref_list).count(),
-            "total_diagnoses": Diagnosis.objects.filter(reference_number__in=ref_list).count()
-        })
-
-
-class BaseCSVReportView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    filename = "report.csv"
-    headers = []
-
-    def get_participants(self, request):
-        school_filter = request.query_params.get('school', None)
-        participants = Participant.objects.all()
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_refs = Firstscreening.objects.filter(school__icontains=clean_school).values_list('reference_number', flat=True)
-            ss_refs = SecondScreening.objects.filter(school__icontains=clean_school).values_list('reference_number', flat=True)
-            matching_refs = set(fs_refs).union(set(ss_refs))
-            participants = participants.filter(reference_number__in=matching_refs)
-        return participants
-
-    def get(self, request, *args, **kwargs):
-        participants = self.get_participants(request)
-        
-        def stream_rows():
-            class PseudoBuffer:
-                def write(self, value):
-                    return value
-
-            pseudo_buffer = PseudoBuffer()
-            writer = csv.writer(pseudo_buffer)
-            
-            # Combine BOM and header row into a single yield so Excel recognizes it instantly
-            yield '\ufeff' + writer.writerow(self.headers)
-            
-            # Yield data rows
-            for p in participants.iterator():
-                row = self.get_row_data(p)
-                if row:
-                    yield writer.writerow(row)
-  
-        response = StreamingHttpResponse(stream_rows(), content_type="text/csv; charset=utf-8")
-        response['Content-Disposition'] = f'attachment; filename="{self.filename}"'
-        response['X-Accel-Buffering'] = 'no'
-        return response
-
-    def get_row_data(self, participant):
-        raise NotImplementedError
-
-
-
-
-# Custom Echo class for streaming CSV output chunk-by-chunk
-class Echo:
-    def write(self, value):
-        return value
-
-
-class SpecOrderReportView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        school_filter = request.query_params.get('school', None)
-        participants = Participant.objects.all()
-
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_ref_numbers = Firstscreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            ss_ref_numbers = SecondScreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
-            participants = participants.filter(reference_number__in=matching_ref_numbers)
-
-        headers = [
-            'Reference Number', 'Screening Date', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade',
-            'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)',
-            'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)',
-            'Frame Choice', 'Lenses Type', 'PD Distance', 'Frame Distance', 'Frame Near', 'Frame Bifocal', 
-            'Fitting Height RE', 'Fitting Height LE', 'Provision Status', 'Comments'
-        ]
-
-        def stream_rows():
-            writer = csv.writer(Echo())
-            yield writer.writerow(headers)
-
-            for p in participants.iterator():
-                ref_num = str(p.reference_number).strip() if p.reference_number else ''
-
-                fs = (
-                    (hasattr(p, 'first_screenings') and p.first_screenings.first()) or
-                    Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
-                )
-                ss = (
-                    (hasattr(p, 'second_screenings') and p.second_screenings.first()) or
-                    SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
-                )
-                refraction = RefractionExamination.objects.filter(
-                    reference_number__iexact=ref_num
-                ).first()
-                dispensing = (
-                    (hasattr(p, 'dispensings') and p.dispensings.order_by('-id').first()) or
-                    Dispensing.objects.filter(participant=p).order_by('-id').first() or
-                    Dispensing.objects.filter(reference_number__iexact=ref_num).order_by('-id').first()
-                )
-
-                screening_obj = fs or ss
-                created_at_val = getattr(screening_obj, 'created_at', None) or getattr(screening_obj, 'date_created', None) or getattr(screening_obj, 'date', None)
-                
-                if created_at_val:
-                    screening_date = created_at_val.strftime('%Y-%m-%d') if hasattr(created_at_val, 'strftime') else str(created_at_val)
-                else:
-                    screening_date = ""
-
-                name = ss.name if ss and ss.name else (fs.name if fs and fs.name else "")
-                surname = ss.surname if ss and ss.surname else (fs.surname if fs and fs.surname else "")
-                age = fs.age if fs and fs.age is not None else ""
-                gender = fs.gender if fs and fs.gender else ""
-                school_name = (
-                    (ss.school if ss and ss.school else None) or 
-                    (fs.school if fs and fs.school else "")
-                )
-                grade = fs.grade if fs and fs.grade else ""
-
-                row = [
-                    ref_num,
-                    screening_date,
-                    name,
-                    surname,
-                    age,
-                    gender,
-                    school_name,
-                    grade,
-                    refraction.sph_RE_final if refraction and refraction.sph_RE_final else "",
-                    refraction.cyl_RE_final if refraction and refraction.cyl_RE_final else "",
-                    refraction.axis_RE_final if refraction and refraction.axis_RE_final else "",
-                    refraction.sph_LE_final if refraction and refraction.sph_LE_final else "",
-                    refraction.cyl_LE_final if refraction and refraction.cyl_LE_final else "",
-                    refraction.axis_LE_final if refraction and refraction.axis_LE_final else "",
-                    dispensing.frame_choice if dispensing and dispensing.frame_choice else "",
-                    dispensing.lenses_type if dispensing and dispensing.lenses_type else "",
-                    dispensing.pd_distance if dispensing and dispensing.pd_distance else "",
-                    dispensing.frame_distance if dispensing and dispensing.frame_distance else "",
-                    dispensing.frame_near if dispensing and dispensing.frame_near else "",
-                    dispensing.frame_bifocal if dispensing and dispensing.frame_bifocal else "",
-                    dispensing.fitting_height_re if dispensing and dispensing.fitting_height_re else "",
-                    dispensing.fitting_height_le if dispensing and dispensing.fitting_height_le else "",
-                    dispensing.provision_status if dispensing and dispensing.provision_status else "",
-                    dispensing.comments if dispensing and dispensing.comments else ""
-                ]
-
-                yield writer.writerow(row)
-
-        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="Spec_Order_Sheet.csv"'
-        return response
-
-
-class ScreeningReportView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        school_filter = request.query_params.get('school', None)
-        participants = Participant.objects.all()
-
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_ref_numbers = Firstscreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            ss_ref_numbers = SecondScreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
-            participants = participants.filter(reference_number__in=matching_ref_numbers)
-
-        headers = [
-            'Reference Number', 'Name', 'Surname', 'Age', 'Gender', 'School', 'Grade', 
-            'Contact First Name', 'Contact Surname', 'Contact Number', 'Relationship', 
-            'Wears Spectacles Status', 'First Screening Completed', 'Second Screening Registered', 
-            'Screening Result', 'Referral Clinic'
-        ]
-
-        def stream_rows():
-            writer = csv.writer(Echo())
-            yield writer.writerow(headers)
-
-            for p in participants.iterator():
-                ref_num = str(p.reference_number).strip() if p.reference_number else ''
-                fs = Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
-                ss = SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
-
-                if not fs and not ss:
-                    continue
-
-                # Fetch database record for Visual Acuity
-                va = VisualAcuityMeasurement.objects.filter(reference_number__iexact=ref_num).first()
-
-                # Exact mapping from DB column
-                if va and va.screening_result:
-                    screening_result = va.screening_result.capitalize()  # 'Pass' or 'Fail'
-                elif va and va.measure_visual_acuity:
-                    screening_result = "Pass"
-                else:
-                    screening_result = "Pending"
-
-                row = [
-                    ref_num,
-                    ss.name if ss and ss.name else (fs.name if fs else ""),
-                    ss.surname if ss and ss.surname else (fs.surname if fs else ""),
-                    fs.age if fs and fs.age is not None else "",
-                    fs.gender if fs and fs.gender else "",
-                    (ss.school if ss and ss.school else None) or (fs.school if fs else ""),
-                    fs.grade if fs else "",
-                    ss.contact_first_name if ss and ss.contact_first_name else (fs.contact_first_name if fs else ""),
-                    ss.contact_surname if ss and ss.contact_surname else (fs.contact_surname if fs else ""),
-                    ss.contact_number if ss and ss.contact_number else (fs.contact_number if fs else ""),
-                    ss.relationship if ss and ss.relationship else (fs.relationship if fs else ""),
-                    fs.wears_spectacles if fs else "",
-                    "Yes" if getattr(p, 'first_screening', False) or fs else "No",
-                    "Yes" if getattr(p, 'second_screening', False) or ss else "No",
-                    screening_result,
-                    fs.referral_clinic if fs else ""
-                ]
-
-                yield writer.writerow(row)
-
-        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="Screening_Report.csv"'
-        return response
-
-
-class ClinicalExaminationReportView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        school_filter = request.query_params.get('school', None)
-        participants = Participant.objects.all()
-
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_ref_numbers = Firstscreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            ss_ref_numbers = SecondScreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
-            participants = participants.filter(reference_number__in=matching_ref_numbers)
-
-        headers = [
-            'Reference Number', 'Registration Date', 'Chief Complaint', 'Duration (Years)', 'Eye', 'Additional Ocular Complaint',
-            'BCVA RE', 'BCVA LE', 'ADD RE', 'ADD LE', 'NPC', 'Ocular Alignment Remarks',
-            'RE Sph (Dry)', 'RE Cyl (Dry)', 'RE Axis (Dry)', 'LE Sph (Dry)', 'LE Cyl (Dry)', 'LE Axis (Dry)',
-            'RE Sph (Final)', 'RE Cyl (Final)', 'RE Axis (Final)', 'LE Sph (Final)', 'LE Cyl (Final)', 'LE Axis (Final)'
-        ]
-
-        def force_text(val):
-            """Prevents Excel from converting visual acuity fractions (e.g. 6/6) to dates."""
-            if val is None or val == "":
-                return ""
-            val_str = str(val).strip()
-            if "/" in val_str:
-                return f'="{val_str}"'
-            return val_str
-
-        def stream_rows():
-            writer = csv.writer(Echo())
-            yield writer.writerow(headers)
-
-            for p in participants.iterator():
-                ref_num = str(p.reference_number).strip() if p.reference_number else ''
-                fs = Firstscreening.objects.filter(reference_number__iexact=ref_num).first()
-                ss = SecondScreening.objects.filter(reference_number__iexact=ref_num).first()
-                refraction = RefractionExamination.objects.filter(reference_number__iexact=ref_num).first()
-
-                if not refraction:
-                    continue
-
-                # Fetch patient complaint record directly from Osat_app_patientcomplaint
-                complaint_obj = PatientComplaint.objects.filter(reference_number__iexact=ref_num).first()
-
-                # Extract Chief Complaint (selected_complaint)
-                chief_complaint = ""
-                if complaint_obj and getattr(complaint_obj, 'selected_complaint', None):
-                    chief_complaint = complaint_obj.selected_complaint
-                elif refraction.chief_complaint:
-                    chief_complaint = refraction.chief_complaint
-
-                # Extract Affected Eye (effected_eye)
-                effected_eye = ""
-                if complaint_obj and getattr(complaint_obj, 'effected_eye', None):
-                    effected_eye = complaint_obj.effected_eye
-                elif refraction.eye:
-                    effected_eye = refraction.eye
-
-                # Registration Date extraction
-                reg_date = ""
-                if fs and getattr(fs, 'created_at', None):
-                    reg_date = fs.created_at.strftime('%Y-%m-%d')
-                elif ss and getattr(ss, 'created_at', None):
-                    reg_date = ss.created_at.strftime('%Y-%m-%d')
-                elif getattr(p, 'created_at', None):
-                    reg_date = p.created_at.strftime('%Y-%m-%d')
-
-                row = [
-                    ref_num,
-                    reg_date,
-                    chief_complaint,
-                    refraction.duration if refraction.duration else "",
-                    effected_eye,
-                    "Yes" if refraction.additional_ocular_complaint else "No",
-                    force_text(refraction.bcva_RE),
-                    force_text(refraction.bcva_LE),
-                    force_text(refraction.add_RE),
-                    force_text(refraction.add_LE),
-                    refraction.npc if refraction.npc else "",
-                    refraction.ocular_alignment_remarks if refraction.ocular_alignment_remarks else "",
-                    refraction.sph_RE_dry if refraction.sph_RE_dry else "",
-                    refraction.cyl_RE_dry if refraction.cyl_RE_dry else "",
-                    refraction.axis_RE_dry if refraction.axis_RE_dry else "",
-                    refraction.sph_LE_dry if refraction.sph_LE_dry else "",
-                    refraction.cyl_LE_dry if refraction.cyl_LE_dry else "",
-                    refraction.axis_LE_dry if refraction.axis_LE_dry else "",
-                    refraction.sph_RE_final if refraction.sph_RE_final else "",
-                    refraction.cyl_RE_final if refraction.cyl_RE_final else "",
-                    refraction.axis_RE_final if refraction.axis_RE_final else "",
-                    refraction.sph_LE_final if refraction.sph_LE_final else "",
-                    refraction.cyl_LE_final if refraction.cyl_LE_final else "",
-                    refraction.axis_LE_final if refraction.axis_LE_final else ""
-                ]
-
-                yield writer.writerow(row)
-
-        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="Clinical_Examinations_Report.csv"'
-        return response
-
-
-class VisualAcuityReportView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        school_filter = request.query_params.get('school', None)
-        participants = Participant.objects.all()
-
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_ref_numbers = Firstscreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            ss_ref_numbers = SecondScreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
-            participants = participants.filter(reference_number__in=matching_ref_numbers)
-
-        headers = [
-            'Reference Number', 
-            'Unaided Dist VA RE', 'Unaided Dist VA LE', 'Unaided Near VA RE', 'Unaided Near VA LE',
-            'Aided Dist VA RE', 'Aided Dist VA LE', 'Aided Near VA RE', 'Aided Near VA LE',
-            'PinHole Dist VA RE', 'PinHole Dist VA LE'
-        ]
-
-        def stream_rows():
-            writer = csv.writer(Echo())
-            yield writer.writerow(headers)
-
-            for p in participants.iterator():
-                ref_num = str(p.reference_number).strip() if p.reference_number else ''
-                va = VisualAcuityMeasurement.objects.filter(reference_number__iexact=ref_num).first()
-
-                if not va:
-                    continue
-
-                row = [
-                    ref_num,
-                    va.unaided_distance_va_re if va.unaided_distance_va_re else "",
-                    va.unaided_distance_va_le if va.unaided_distance_va_le else "",
-                    va.unaided_near_va_re if va.unaided_near_va_re else "",
-                    va.unaided_near_va_le if va.unaided_near_va_le else "",
-                    va.aided_distance_va_re if va.aided_distance_va_re else "",
-                    va.aided_distance_va_le if va.aided_distance_va_le else "",
-                    va.aided_near_va_re if va.aided_near_va_re else "",
-                    va.aided_near_va_le if va.aided_near_va_le else "",
-                    va.ph_distance_va_re if va.ph_distance_va_re else "",
-                    getattr(va, 'ph_distance_va_le', getattr(va, 'pd_distance_va_le', ''))
-                ]
-
-                yield writer.writerow(row)
-
-        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="Visual_Acuity_Report.csv"'
-        return response
-
-
-class DiagnosisReportView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        school_filter = request.query_params.get('school', None)
-        participants = Participant.objects.all()
-
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_ref_numbers = Firstscreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            ss_ref_numbers = SecondScreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
-            participants = participants.filter(reference_number__in=matching_ref_numbers)
-
-        headers = ['Reference Number', 'Refractive Error Type', 'Affected Eye', 'Ocular Condition', 'Management Plan']
-
-        def stream_rows():
-            writer = csv.writer(Echo())
-            yield writer.writerow(headers)
-
-            for p in participants.iterator():
-                ref_num = str(p.reference_number).strip() if p.reference_number else ''
-                diag = Diagnosis.objects.filter(reference_number__iexact=ref_num).first()
-
-                if not diag:
-                    continue
-
-                management_str = ", ".join(diag.management_plan) if isinstance(diag.management_plan, list) else str(diag.management_plan or "")
-
-                row = [
-                    ref_num,
-                    diag.refractive_error_type if diag.refractive_error_type else "",
-                    diag.affected_eye if diag.affected_eye else "",
-                    diag.ocular_condition if diag.ocular_condition else "",
-                    management_str
-                ]
-
-                yield writer.writerow(row)
-
-        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="Diagnosis_Management_Report.csv"'
-        return response
-
-
-class PatientHistoryReportView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        school_filter = request.query_params.get('school', None)
-        participants = Participant.objects.all()
-
-        if school_filter and school_filter.strip():
-            clean_school = school_filter.strip()
-            fs_ref_numbers = Firstscreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            ss_ref_numbers = SecondScreening.objects.filter(
-                school__icontains=clean_school
-            ).values_list('reference_number', flat=True)
-            matching_ref_numbers = set(fs_ref_numbers).union(set(ss_ref_numbers))
-            participants = participants.filter(reference_number__in=matching_ref_numbers)
-
-        headers = [
-            'Reference Number', 'Wears Spectacles', 'Lens Condition', 'Lens Material', 
-            'Lens Coating', 'Lens Type', 'Refractive Index', 'Glasses Source', 'Satisfaction',
-            'Current Medication', 'Medicine Name', 'Treatment Eye', 'Medicine Type', 'Frequency / Day',
-            'Family History Notes'
-        ]
-
-        def stream_rows():
-            writer = csv.writer(Echo())
-            yield writer.writerow(headers)
-
-            for p in participants.iterator():
-                ref_num = str(p.reference_number).strip() if p.reference_number else ''
-                spec_history = SpectacleHistory.objects.filter(reference_number__iexact=ref_num).first()
-                med_treatment = CurrentMedicalTreatment.objects.filter(reference_number__iexact=ref_num).first()
-                fam_history = FamilyHistory.objects.filter(reference_number__iexact=ref_num).first()
-
-                if not spec_history and not med_treatment and not fam_history:
-                    continue
-
-                fam_notes = []
-                if fam_history:
-                    if getattr(fam_history, 'Hypertension', False): fam_notes.append("Hypertension")
-                    if getattr(fam_history, 'Diabetes', False): fam_notes.append("Diabetes")
-                    if getattr(fam_history, 'Cataract', False): fam_notes.append("Cataract")
-                    if getattr(fam_history, 'Glaucoma', False): fam_notes.append("Glaucoma")
-                    if getattr(fam_history, 'Other_text', None): fam_notes.append(f"Other: {fam_history.Other_text}")
-
-                row = [
-                    ref_num,
-                    spec_history.wears_spectacles if spec_history and spec_history.wears_spectacles else "",
-                    spec_history.lens_condition if spec_history and spec_history.lens_condition else "",
-                    spec_history.lens_material if spec_history and spec_history.lens_material else "",
-                    spec_history.lens_coating if spec_history and spec_history.lens_coating else "",
-                    spec_history.lens_type if spec_history and spec_history.lens_type else "",
-                    spec_history.refractive_index if spec_history and spec_history.refractive_index else "",
-                    spec_history.glasses_source if spec_history and spec_history.glasses_source else "",
-                    spec_history.satisfaction_level if spec_history and spec_history.satisfaction_level else "",
-                    med_treatment.medical_treatment if med_treatment and med_treatment.medical_treatment else "",
-                    med_treatment.medicine if med_treatment and med_treatment.medicine else "",
-                    med_treatment.treatment_eye if med_treatment and med_treatment.treatment_eye else "",
-                    med_treatment.medicine_type if med_treatment and med_treatment.medicine_type else "",
-                    med_treatment.times_per_day if med_treatment and med_treatment.times_per_day else "",
-                    ", ".join(fam_notes)
-                ]
-
-                yield writer.writerow(row)
-
-        response = StreamingHttpResponse(stream_rows(), content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="Patient_Medical_History_Report.csv"'
-        return response
-
-# class SecondscreeningAPIView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-#     parser_classes = (MultiPartParser, FormParser)
-
-#     def get(self, request, *args, **kwargs):
-#         reference_number = request.query_params.get("reference_number")
-
-#         if reference_number:
-#             screenings = SecondScreening.objects.filter(
-#                 reference_number=reference_number, created_by=request.user
-#             )
-#         else:
-#             screenings = SecondScreening.objects.filter(created_by=request.user)
-
-#         serializer = SecondscreeningSerializer(screenings, many=True)
-
-#         if serializer.data:
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": "Data fetched successfully",
-#                     "error": False,
-#                 },
-#                 status=status.HTTP_200_OK,
-#             )
-#         else:
-#             return Response(
-#                 {
-#                     "body": [],
-#                     "message": "No records found",
-#                     "error": True,
-#                 },
-#                 status=status.HTTP_404_NOT_FOUND,
-#             )
-
-#     def post(self, request, *args, **kwargs):
-#         reference_number = request.data.get("reference_number")
-
-#         if not reference_number:
-#             return Response(
-#                 {"body": {}, "message": "Reference number is required", "error": True},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         instance = SecondScreening.objects.filter(
-#             reference_number=reference_number
-#         ).first()
-
-#         serializer = SecondscreeningSerializer(
-#             instance, data=request.data, partial=True
-#         )
-
-#         if serializer.is_valid():
-#             second_screening = serializer.save(created_by=request.user)
-
-#             participant, _ = Participant.objects.get_or_create(
-#                 reference_number=second_screening.reference_number
-#             )
-#             participant.created_by = request.user
-#             participant.second_screening = True
-#             participant.save()
-
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": "Details updated successfully"
-#                     if instance
-#                     else "Details created successfully",
-#                     "error": False,
-#                 },
-#                 status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED,
-#             )
-
-#         first_error = next(iter(serializer.errors.values()))[0]
-#         return Response(
-#             {
-#                 "body": {},
-#                 "message": f"Validation failed - {first_error}",
-#                 "error": True,
-#             },
-#             status=status.HTTP_400_BAD_REQUEST,
-#         )
-
-
-# class SecondscreeningAPIView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-#     parser_classes = (MultiPartParser, FormParser)
-
-#     def get(self, request, *args, **kwargs):
-#         """
-#         Get all second screening records or filter by reference number.
-#         """
-#         reference_number = request.query_params.get("reference_number")
-
-#         if reference_number:
-#             screenings = SecondScreening.objects.filter(
-#                 reference_number=reference_number, created_by=request.user
-#             )
-#         else:
-#             screenings = SecondScreening.objects.filter(created_by=request.user)
-
-#         serializer = SecondscreeningSerializer(screenings, many=True)
-
-#         if screenings.exists():
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": "Data fetched successfully",
-#                     "error": False,
-#                 },
-#                 status=status.HTTP_200_OK,
-#             )
-#         else:
-#             return Response(
-#                 {
-#                     "body": [],
-#                     "message": "No records found",
-#                     "error": True,
-#                 },
-#                 status=status.HTTP_404_NOT_FOUND,
-#             )
-
-#     def post(self, request, *args, **kwargs):
-#         """
-#         Create or update a Second Screening record.
-#         If ID is present → update that record (do not create a new one).
-#         If reference_number changes → delete the old record with the old reference_number.
-#         """
-#         second_screening_id = request.data.get("id", None)
-#         new_ref_number = request.data.get("reference_number", "").strip()
-#         old_ref_number = request.data.get("old_reference_number", "").strip()
-#         print("old ref number:--->>", old_ref_number)
-#         instance = None
-#         # old_ref_number = None
-
-#         # ✅ Try to fetch the record by ID if provided
-#         if second_screening_id not in [None, "", "null"]:
-#             try:
-#                 instance = SecondScreening.objects.get(id=int(second_screening_id))
-#                 # old_ref_number = instance.reference_number
-#             except (SecondScreening.DoesNotExist, ValueError, TypeError):
-#                 instance = None
-
-#         # ✅ Prevent duplicate reference number (excluding current instance)
-#         if new_ref_number:
-#             existing = SecondScreening.objects.filter(reference_number=new_ref_number)
-#             if instance:
-#                 existing = existing.exclude(id=instance.id)
-#             if existing.exists():
-#                 return Response(
-#                     {
-#                         "body": {},
-#                         "message": "This reference number already exists. Please use a unique one.",
-#                         "error": True,
-#                     },
-#                     status=status.HTTP_400_BAD_REQUEST,
-#                 )
-
-#         # ✅ Save (create or update)
-#         serializer = SecondscreeningSerializer(
-#             instance, data=request.data, partial=True
-#         )
-#         if serializer.is_valid():
-#             second_screening = serializer.save(created_by=request.user)
-#             print("done")
-#             print("old ref number:", old_ref_number)
-#             print("new ref number:", new_ref_number)
-
-#             # ✅ If the reference number has changed → delete the old record
-#             if old_ref_number and old_ref_number != new_ref_number:
-#                 SecondScreening.objects.filter(reference_number=old_ref_number).exclude(
-#                     id=second_screening.id
-#                 ).delete()
-#                 # Optional: also delete old participant with old reference
-#                 print("deleting old reference number participant:", old_ref_number)
-#                 Participant.objects.filter(reference_number=old_ref_number).delete()
-#                 print("deleted old reference number:", old_ref_number)
-
-#             # ✅ Sync with Participant (for new reference)
-#             participant, _ = Participant.objects.get_or_create(
-#                 reference_number=second_screening.reference_number
-#             )
-#             participant.created_by = request.user
-#             participant.second_screening = True
-#             participant.save()
-
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": (
-#                         "Details updated successfully"
-#                         if instance
-#                         else "Record created successfully"
-#                     ),
-#                     "error": False,
-#                 },
-#                 status=status.HTTP_200_OK,
-#             )
-
-
-#         first_error = next(iter(serializer.errors.values()))[0]
-#         return Response(
-#             {
-#                 "body": {},
-#                 "message": f"Validation failed - {first_error}",
-#                 "error": True,
-#             },
-#             status=status.HTTP_400_BAD_REQUEST,
-#         )
-
-
-class SecondscreeningAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
-
-    def get(self, request, *args, **kwargs):
-        """
-        Get all second screening records or filter by reference number.
-        """
-        reference_number = request.query_params.get("reference_number")
-
-        if reference_number:
-            screenings = SecondScreening.objects.filter(
-                reference_number=reference_number, created_by=request.user
-            )
-        else:
-            screenings = SecondScreening.objects.filter(created_by=request.user)
-
-        serializer = SecondscreeningSerializer(screenings, many=True)
-
-        if screenings.exists():
-            return Response(
-                {
-                    "body": serializer.data,
-                    "message": "Data fetched successfully",
-                    "error": False,
-                },
-                status=status.HTTP_200_OK,
-            )
-        else:
-            return Response(
-                {
-                    "body": [],
-                    "message": "No records found",
-                    "error": True,
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-    def post(self, request, *args, **kwargs):
-        """
-        Create or update a Second Screening record.
-        - If ID is present → update the existing record (don’t create a new one)
-        - If reference_number changes → delete the old record & participant
-        """
-        second_screening_id = request.data.get("id")
-        new_ref_number = request.data.get("reference_number", "").strip()
-        instance = None
-        old_ref_number = None
-
-        # ✅ Fetch the instance if ID is provided (auto-detect old reference number)
-        if second_screening_id not in [None, "", "null"]:
-            try:
-                instance = SecondScreening.objects.get(id=int(second_screening_id))
-                old_ref_number = instance.reference_number  # auto-detect old ref
-            except (SecondScreening.DoesNotExist, ValueError, TypeError):
-                instance = None
-
-        print(f"🔹 Old Reference Number: {old_ref_number}")
-        print(f"🔹 New Reference Number: {new_ref_number}")
-
-        # ✅ Prevent duplicate reference numbers (excluding current record)
-        if new_ref_number:
-            existing = SecondScreening.objects.filter(reference_number=new_ref_number)
-            if instance:
-                existing = existing.exclude(id=instance.id)
-            if existing.exists():
-                return Response(
-                    {
-                        "body": {},
-                        "message": "This reference number already exists. Please use a unique one.",
-                        "error": True,
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        # ✅ Validate and save (create or update)
-        serializer = SecondscreeningSerializer(
-            instance, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            second_screening = serializer.save(created_by=request.user)
-
-            # ✅ If the reference number changed → delete old records
-            if old_ref_number and old_ref_number != new_ref_number:
-                print(f"🗑️ Deleting old record with reference_number={old_ref_number}")
-                SecondScreening.objects.filter(reference_number=old_ref_number).exclude(
-                    id=second_screening.id
-                ).delete()
-                Participant.objects.filter(reference_number=old_ref_number).delete()
-
-            # ✅ Sync with Participant (new reference)
-            participant, _ = Participant.objects.get_or_create(
-                reference_number=second_screening.reference_number
-            )
-            participant.created_by = request.user
-            participant.second_screening = True
-            participant.save()
-
-            return Response(
-                {
-                    "body": serializer.data,
-                    "message": (
-                        "Record updated successfully"
-                        if instance
-                        else "Record created successfully"
-                    ),
-                    "error": False,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        # ❌ Handle validation errors
-        first_error = next(iter(serializer.errors.values()))[0]
-        return Response(
-            {
-                "body": {},
-                "message": f"Validation failed - {first_error}",
-                "error": True,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-# Dispensing API
-class DispensingAPIView(APIView):
-
-    def get(self, request):
-        """
-        Retrieve the latest dispensing record based on reference number.
-        If no record exists yet, return empty defaults with HTTP 200 to allow creation.
-        """
-        reference_number = request.GET.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Clean string whitespace
-        reference_number = reference_number.strip()
-
-        latest_dispensing_record = (
-            Dispensing.objects.filter(reference_number__iexact=reference_number)
-            .order_by("-id")
-            .first()
-        )
-
-        # If no record exists, return an empty payload instead of a 404 error
-        if not latest_dispensing_record:
-            return Response(
-                {
-                    "body": {
-                        "reference_number": reference_number,
-                        "frame_choice": "",
-                        "lenses_type": "",
-                        "pd_distance": "",
-                        "comments": ""
-                    },
-                    "message": "No previous dispensing record found. Ready for new submission.",
-                    "error": False,
-                    "is_new": True
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        serializer = DispensingSerializer(latest_dispensing_record)
-        return Response(
-            {"body": serializer.data, "error": False, "is_new": False}, 
-            status=status.HTTP_200_OK
-        )
-
-    def post(self, request):
-        """
-        Save or update dispensing details.
-        """
-        data = request.data.copy()
-        
-        # Ensure reference_number whitespace is stripped if present
-        if 'reference_number' in data and isinstance(data['reference_number'], str):
-            data['reference_number'] = data['reference_number'].strip()
-
-        serializer = DispensingSerializer(data=data)
-
-        if serializer.is_valid():
-            dispensing_obj = serializer.save()
-
-            # Update Participant status
-            reference_number = dispensing_obj.reference_number
-            Participant.objects.filter(reference_number__iexact=reference_number).update(dispensing=True)
-
-            return Response(
-                {
-                    "body": serializer.data,
-                    "message": "Dispensing details saved successfully",
-                    "error": False,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-
-        return Response(
-            {
-                "body": [],
-                "message": "Validation failed",
-                "error": True,
-                "errors": serializer.errors,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-class IndividualPatientReportView(APIView):
-    """
-    Returns the complete available report for ONE participant
-    identified by reference number.
-    """
-
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, reference_number, *args, **kwargs):
-
-        reference_number = str(reference_number).strip()
-
-        if not reference_number:
-            return Response(
-                {
-                    "body": [],
-                    "message": "Reference number is required.",
-                    "error": True
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        participant = Participant.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        if not participant:
-            return Response(
-                {
-                    "body": [],
-                    "message": "No participant found with this reference number.",
-                    "error": True
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # ---------------------------------------------------------
-        # FIRST SCREENING
-        # ---------------------------------------------------------
-
-        first_screening = Firstscreening.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # SECOND SCREENING
-        # ---------------------------------------------------------
-
-        second_screening = SecondScreening.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # VISUAL ACUITY
-        # ---------------------------------------------------------
-
-        visual_acuity = VisualAcuityMeasurement.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # REFRACTION EXAMINATION
-        # ---------------------------------------------------------
-
-        refraction = RefractionExamination.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # DIAGNOSIS
-        # ---------------------------------------------------------
-
-        diagnosis = Diagnosis.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # DISPENSING
-        # ---------------------------------------------------------
-
-        dispensing = Dispensing.objects.filter(
-            reference_number__iexact=reference_number
-        ).order_by('-id').first()
-
-        # ---------------------------------------------------------
-        # PATIENT COMPLAINT
-        # ---------------------------------------------------------
-
-        patient_complaint = PatientComplaint.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # SPECTACLE HISTORY
-        # ---------------------------------------------------------
-
-        spectacle_history = SpectacleHistory.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # CURRENT MEDICAL TREATMENT
-        # ---------------------------------------------------------
-
-        current_medical_treatment = CurrentMedicalTreatment.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # FAMILY HISTORY
-        # ---------------------------------------------------------
-
-        family_history = FamilyHistory.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # SURGERY / TREATMENT HISTORY
-        # ---------------------------------------------------------
-
-        surgery_treatment_history = SurgeryTreatmentHistory.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # COMPREHENSIVE
-        # ---------------------------------------------------------
-        #
-        # Comprehensive only contains:
-        #   id
-        #   status
-        #
-        # It does NOT contain reference_number, therefore it cannot
-        # be queried directly using the participant reference number.
-        #
-        # We leave this as None until its actual relationship to the
-        # participant is established.
-        # ---------------------------------------------------------
-
-        comprehensive = None
-
-        # ---------------------------------------------------------
-        # COMPREHENSIVE EYE TEST
-        # ---------------------------------------------------------
-
-        comprehensive_eye_test = ComprehensiveEyeTest.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # OTHER MEDICAL ISSUE
-        # ---------------------------------------------------------
-
-        other_medical_issue = OtherMedicalIssueResponse.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # REFRACTION SPECTACLE
-        # ---------------------------------------------------------
-
-        refraction_spectacle = RefractionSpectacle.objects.filter(
-            reference_number__iexact=reference_number
-        ).first()
-
-        # ---------------------------------------------------------
-        # BUILD REPORT
-        # ---------------------------------------------------------
-
-        report = {
-            "reference_number": reference_number,
-
-            "participant": ParticipantSerializer(
-                participant
-            ).data if participant else None,
-
-            "first_screening": FirstScreeningSerializer(
-                first_screening
-            ).data if first_screening else None,
-
-            "second_screening": SecondscreeningSerializer(
-                second_screening
-            ).data if second_screening else None,
-
-            "visual_acuity": VisualacuitySerializer(
-                visual_acuity
-            ).data if visual_acuity else None,
-
-            "patient_complaint": PatientComplaintSerializer(
-                patient_complaint
-            ).data if patient_complaint else None,
-
-            "refraction": RefractionExaminationSerializer(
-                refraction
-            ).data if refraction else None,
-
-            "diagnosis": DiagnosisSerializer(
-                diagnosis
-            ).data if diagnosis else None,
-
-            "dispensing": DispensingSerializer(
-                dispensing
-            ).data if dispensing else None,
-
-            "spectacle_history": SpectacleHistorySerializer(
-                spectacle_history
-            ).data if spectacle_history else None,
-
-            "current_medical_treatment": CurrentMedicalSerializer(
-                current_medical_treatment
-            ).data if current_medical_treatment else None,
-
-            "family_history": FamilyHistorySerializer(
-                family_history
-            ).data if family_history else None,
-
-            "surgery_treatment_history": SurgeryTreatmentHistorySerializer(
-                surgery_treatment_history
-            ).data if surgery_treatment_history else None,
-
-            "comprehensive": None,
-
-            "comprehensive_eye_test": ComprehensiveEyeTestSerializer(
-                comprehensive_eye_test
-            ).data if comprehensive_eye_test else None,
-
-            "other_medical_issue": OtherMedicalIssueResponseSerializer(
-                other_medical_issue
-            ).data if other_medical_issue else None,
-
-            "refraction_spectacle": RefractionSpectacleSerializer(
-                refraction_spectacle
-            ).data if refraction_spectacle else None,
-        }
-        print("========================================")
-        print("FINAL PATIENT REPORT")
-        print(report)
-        print("========================================")
-        return Response(
-            {
-                "body": report,
-                "message": "Participant report retrieved successfully.",
-                "error": False
-            },
-            status=status.HTTP_200_OK
-        )
-
-# Refraction-Examination API
-class RefractionExaminationAPIView(generics.ListCreateAPIView):
-    queryset = RefractionExamination.objects.all()
-    serializer_class = RefractionExaminationSerializer
-
-    def post(self, request, *args, **kwargs):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        obj, created = RefractionExamination.objects.update_or_create(
-            reference_number=reference_number,  # Lookup field
-            defaults=request.data,  # Update or create with request data
-        )
-
-        # ✅ Update Participant profile to reflect the refraction examination
-        try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.refraction_and_examination = (
-                True  # Set refraction examination to True
-            )
-            participant.save()
-        except Participant.DoesNotExist:
-            pass  # If no participant exists, do nothing (or create if needed)
-
-        return Response(
-            {
-                "body": request.data,
-                "message": "Refraction Examination created successfully"
-                if created
-                else "Refraction Examination updated successfully",
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
-
-    def get(self, request, *args, **kwargs):
-        """Retrieve a specific Refraction Examination record based on reference number"""
-        reference_number = request.GET.get(
-            "reference_number"
-        )  # Get reference_number from query params
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Fetch the latest record for the given reference_number
-        refraction_exam = (
-            RefractionExamination.objects.filter(reference_number=reference_number)
-            .order_by("-id")
-            .first()
-        )
-
-        if not refraction_exam:
-            return Response(
-                {"message": "Refraction Examination record not found", "error": True},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        serializer = self.serializer_class(refraction_exam)  # Serialize the record
-
-        return Response(
-            {"body": serializer.data, "error": False}, status=status.HTTP_200_OK
-        )
-
-
-# # class DiagnosisView(APIView):
-# class DiagnosisView(APIView):
-#     def post(self, request):
-#         reference_number = request.data.get("reference_number")
-
-#         if not reference_number:
-#             return Response(
-#                 {"message": "Reference number is required", "error": True},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         obj, created = Diagnosis.objects.update_or_create(
-#             reference_number=reference_number, defaults=request.data
-#         )
-
-#         # ✅ Update Participant profile to reflect the diagnosis
-#         try:
-#             participant = Participant.objects.get(reference_number=reference_number)
-#             participant.diagnosis_management = True  # Set diagnosis to True
-#             participant.save()
-#         except Participant.DoesNotExist:
-#             pass  # If no participant exists, do nothing (or create if needed)
-
-#         return Response(
-#             {
-#                 "message": "Diagnosis saved successfully"
-#                 if created
-#                 else "Diagnosis updated successfully",
-#                 "error": False,
-#             },
-#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-#         )
-
-#     def get(self, request):
-#         """
-#         Retrieve a specific diagnosis record based on reference number.
-#         """
-#         reference_number = request.query_params.get("reference_number")
-
-#         if not reference_number:
-#             return Response(
-#                 {"message": "Reference number is required", "error": True},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         try:
-#             diagnosis = Diagnosis.objects.get(reference_number=reference_number)
-#             serializer = DiagnosisSerializer(diagnosis)
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": "Diagnosis record retrieved successfully",
-#                     "error": False,
-#                 },
-#                 status=status.HTTP_200_OK,
-#             )
-#         except Diagnosis.DoesNotExist:
-#             return Response(
-#                 {"message": "Diagnosis record not found", "error": True},
-#                 status=status.HTTP_404_NOT_FOUND,
-#             )
-
-
-
-
-class DiagnosisView(APIView):
-    """
-    Handles creation, update, and retrieval of Diagnosis records.
-    """
-
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Check if record exists → update else create
-        try:
-            instance = Diagnosis.objects.get(reference_number=reference_number)
-            serializer = DiagnosisSerializer(instance, data=request.data, partial=True)
-        except Diagnosis.DoesNotExist:
-            serializer = DiagnosisSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-
-            # ✅ Update Participant status
-            Participant.objects.update_or_create(
-                reference_number=reference_number,
-                defaults={"diagnosis_management": True},
-            )
-
-            return Response(
-                {
-                    "message": "Diagnosis saved successfully",
-                    "error": False,
-                    "body": serializer.data,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        return Response(
-            {"message": "Invalid data", "error": True, "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    def get(self, request):
-        """
-        Retrieve a diagnosis record by reference_number.
-        """
-        reference_number = request.query_params.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            diagnosis = Diagnosis.objects.get(reference_number=reference_number)
-            serializer = DiagnosisSerializer(diagnosis)
-            return Response(
-                {
-                    "message": "Diagnosis record retrieved successfully",
-                    "error": False,
-                    "body": serializer.data,
-                },
-                status=status.HTTP_200_OK,
-            )
-        except Diagnosis.DoesNotExist:
-            return Response(
-                {"message": "Diagnosis record not found", "error": True},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-
-# profile-API
-# class ParticipantView(APIView):
-#     def get(self, request, *args, **kwargs):
-#         reference_number = request.query_params.get("reference_number")
-
-#         if not reference_number:
-#             return Response({"error": "Reference number is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         participant = get_object_or_404(Participant, reference_number=reference_number)
-#         serializer = ParticipantSerializer(participant)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-#     def post(self, request, *args, **kwargs):
-#         reference_number = request.data.get("reference_number")
-
-#         if not reference_number:
-#             return Response({"error": "Reference number is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         participant, _ = Participant.objects.get_or_create(reference_number=reference_number)
-#         serializer = ParticipantSerializer(participant)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class ParticipantView(APIView):
-    def get(self, request, *args, **kwargs):
-        reference_number = request.query_params.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"error": "Reference number is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        participant = get_object_or_404(Participant, reference_number=reference_number)
-        serializer = ParticipantSerializer(participant)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, *args, **kwargs):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"error": "Reference number is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # ✅ Get or create participant
-        participant, _ = Participant.objects.get_or_create(
-            reference_number=reference_number
-        )
-        participant_data = ParticipantSerializer(participant).data
-
-        # ✅ Fetch First Screening details
-        try:
-            first_screening = Firstscreening.objects.get(
-                reference_number=reference_number
-            )
-            first_screening_data = FirstScreeningSerializer(first_screening).data
-        except Firstscreening.DoesNotExist:
-            first_screening_data = {}
-
-        # ✅ Fetch Second Screening details
-        try:
-            second_screening = SecondScreening.objects.get(
-                reference_number=reference_number
-            )
-            second_screening_data = SecondscreeningSerializer(second_screening).data
-        except SecondScreening.DoesNotExist:
-            second_screening_data = {}
-
-        # ✅ Merge all data
-        response_data = {
-            **participant_data,  # Include participant details
-            **first_screening_data,  # Include first screening details
-            **second_screening_data,  # Include second screening details
-        }
-
-        return Response(response_data, status=status.HTTP_200_OK)
-
-
-# SpectacleHistory API
-class SpectacleHistoryAPIView(APIView):
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        obj, created = SpectacleHistory.objects.update_or_create(
-            reference_number=reference_number,  # Lookup field
-            defaults=request.data,  # Update or create with request data
-        )
-
-        # Try updating Participant model if it exists
-        try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.spectacle_wearing_history = (
-                True  # Assuming this field exists in Participant model
-            )
-            participant.save()
-        except Participant.DoesNotExist:
-            pass  # If Participant does not exist, do nothing
-
-        return Response(
-            {
-                "message": "Spectacle history saved successfully"
-                if created
-                else "Spectacle history updated successfully",
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
-
-    def get(self, request):
-        """
-        Retrieve a specific spectacle history record based on reference number.
-        """
-        reference_number = request.query_params.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            spectacle_history = SpectacleHistory.objects.get(
-                reference_number=reference_number
-            )
-            serializer = SpectacleHistorySerializer(spectacle_history)
-            return Response(
-                {
-                    "body": serializer.data,
-                    "message": "Spectacle history record retrieved successfully",
-                    "error": False,
-                },
-                status=status.HTTP_200_OK,
-            )
-        except SpectacleHistory.DoesNotExist:
-            return Response(
-                {"message": "Spectacle history record not found", "error": True},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-
-# Surgery-History API
-class SurgeryTreatmentHistoryAPIView(APIView):
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Extract surgery_history from the payload
-        surgery_history = request.data.pop("surgery_history", None)
-
-        # Prepare the data for update_or_create
-        defaults = request.data
-
-        # If surgery_history is provided, map it to the model fields
-        if surgery_history:
-            left_eye = surgery_history.get("leftEye", {})
-            right_eye = surgery_history.get("rightEye", {})
-
-            defaults.update(
-                {
-                    "left_eye_trauma": left_eye.get("trauma", False),
-                    "left_eye_cataract": left_eye.get("cataract", False),
-                    "left_eye_squint": left_eye.get("squint", False),
-                    "left_eye_lid": left_eye.get("lid", False),
-                    "left_eye_other": left_eye.get("other", False),
-                    "left_eye_none": left_eye.get("none", False),
-                    "right_eye_trauma": right_eye.get("trauma", False),
-                    "right_eye_cataract": right_eye.get("cataract", False),
-                    "right_eye_squint": right_eye.get("squint", False),
-                    "right_eye_lid": right_eye.get("lid", False),
-                    "right_eye_other": right_eye.get("other", False),
-                    "right_eye_none": right_eye.get("none", False),
-                }
-            )
-
-        # Update or create the record
-        obj, created = SurgeryTreatmentHistory.objects.update_or_create(
-            reference_number=reference_number, defaults=defaults
-        )
-
-        # Serialize the response
-        serializer = SurgeryTreatmentHistorySerializer(obj)
-
-        return Response(
-            {
-                "message": "SurgeryTreatmentHistory saved successfully"
-                if created
-                else "SurgeryTreatmentHistory updated successfully",
-                "data": serializer.data,
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
-
-    def get(self, request):
-        """Retrieve Surgery Treatment History record based on reference number"""
-        reference_number = request.GET.get(
-            "reference_number"
-        )  # Get reference_number from query params
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Fetch the record, if it exists
-        surgery_history = get_object_or_404(
-            SurgeryTreatmentHistory, reference_number=reference_number
-        )
-
-        # Formatting response in the required structure
-        response_data = {
-            "reference_number": surgery_history.reference_number,
-            "surgery_history": {
-                "leftEye": {
-                    "trauma": surgery_history.left_eye_trauma,
-                    "cataract": surgery_history.left_eye_cataract,
-                    "squint": surgery_history.left_eye_squint,
-                    "lid": surgery_history.left_eye_lid,
-                    "other": surgery_history.left_eye_other,
-                    "none": surgery_history.left_eye_none,
-                },
-                "rightEye": {
-                    "trauma": surgery_history.right_eye_trauma,
-                    "cataract": surgery_history.right_eye_cataract,
-                    "squint": surgery_history.right_eye_squint,
-                    "lid": surgery_history.right_eye_lid,
-                    "other": surgery_history.right_eye_other,
-                    "none": surgery_history.right_eye_none,
-                },
-            },
-        }
-
-        return Response(
-            {"body": response_data, "error": False}, status=status.HTTP_200_OK
-        )
-
-
-# # other-Medical API
-# class OtherMedicalIssueResponseView(APIView):
-#     def get(self, request):
-#         reference_number = request.query_params.get("reference_number")
-
-#         if not reference_number:
-#             return Response(
-#                 {"body": {}, "message": "Reference number is required", "error": True},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         medical_issue = OtherMedicalIssueResponse.objects.filter(
-#             reference_number__iexact=reference_number.strip()
-#         ).first()
-
-#         if not medical_issue:
-#             return Response(
-#                 {
-#                     "body": {},
-#                     "message": "Medical issue response not found",
-#                     "error": True,
-#                 },
-#                 status=status.HTTP_404_NOT_FOUND,
-#             )
-
-#         serializer = OtherMedicalIssueResponseSerializer(medical_issue)
-
-#         return Response(
-#             {
-#                 "body": serializer.data,
-#                 "message": "Medical issue response retrieved successfully",
-#                 "error": False,
-#             },
-#             status=status.HTTP_200_OK,
-#         )
-
-#     def post(self, request):
-#         serializer = OtherMedicalIssueResponseSerializer(data=request.data)
-
-#         if serializer.is_valid():
-#             obj = serializer.save()  # Save the validated data
-#             reference_number = serializer.validated_data.get("reference_number")
-
-#             # Try updating Participant model if it exists
-#             try:
-#                 participant = Participant.objects.get(reference_number=reference_number)
-#                 participant.other_medical_issues = (
-#                     obj.other_medical_issues
-#                 )  # Update field
-#                 participant.save()
-#             except Participant.DoesNotExist:
-#                 pass  # If Participant does not exist, do nothing
-
-#             return Response(
-#                 {
-#                     "body": serializer.data,
-#                     "message": "Other Medical history saved successfully",
-#                     "error": False,
-#                 },
-#                 status=status.HTTP_201_CREATED,
-#             )
-
-#         return Response(
-#             {
-#                 "body": {},
-#                 "message": "Invalid input",
-#                 "error": True,
-#                 "details": serializer.errors,
-#             },
-#             status=status.HTTP_400_BAD_REQUEST,
-#         )
-
-
-class OtherMedicalIssueResponseView(APIView):
-    def get(self, request):
-        reference_number = request.query_params.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"body": {}, "message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        try:
-            medical_issue = OtherMedicalIssueResponse.objects.get(
-                reference_number__iexact=reference_number.strip()
-            )
-        except OtherMedicalIssueResponse.DoesNotExist:
-            return Response(
-                {
-                    "body": {},
-                    "message": "Medical issue response not found",
-                    "error": True,
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        serializer = OtherMedicalIssueResponseSerializer(medical_issue)
-        return Response(
-            {
-                "body": serializer.data,
-                "message": "Medical issue response retrieved successfully",
-                "error": False,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"body": {}, "message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = OtherMedicalIssueResponseSerializer(data=request.data)
-        if serializer.is_valid():
-            data = serializer.validated_data
-
-            # Update or Create ek hi record per reference_number
-            obj, created = OtherMedicalIssueResponse.objects.update_or_create(
-                reference_number=reference_number,
-                defaults={
-                    "medical_issue": data.get("medical_issue"),
-                    "other_medical_issues": data.get("other_medical_issues"),
-                },
-            )
-
-            try:
-                participant = Participant.objects.get(reference_number=reference_number)
-                participant.other_medical_issues = obj.other_medical_issues
-                participant.save()
-            except Participant.DoesNotExist:
-                pass
-
-            return Response(
-                {
-                    "body": OtherMedicalIssueResponseSerializer(obj).data,
-                    "message": "Other Medical history saved successfully",
-                    "error": False,
-                },
-                status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED,
-            )
-
-        return Response(
-            {
-                "body": {},
-                "message": "Invalid input",
-                "error": True,
-                "details": serializer.errors,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-# # Family-History API
-# class FamilyHistoryAPIView(APIView):
-#     def post(self, request):
-#         reference_number = request.data.get("reference_number")
-
-#         if not reference_number:
-#             return Response(
-#                 {
-#                     "body": [],
-#                     "message": "Failed to save Family History",
-#                     "error": True,
-#                     "errors": {"reference_number": ["This field is required."]},
-#                 },
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         obj, created = FamilyHistory.objects.update_or_create(
-#             reference_number=reference_number, defaults=request.data
-#         )
-
-#         try:
-#             participant = Participant.objects.get(reference_number=reference_number)
-#             participant.family_history = (
-#                 True  # Assuming you have this field in Participant model
-#             )
-#             participant.save()
-#         except Participant.DoesNotExist:
-#             pass
-
-#             # Formatting response in the required structure
-#         response_data = {
-#             "reference_number": obj.reference_number,
-#             "family_history": {
-#                 "Hypertension": obj.Hypertension,
-#                 "Diabetes": obj.Diabetes,
-#                 "Cataract": obj.Cataract,
-#                 "Glaucoma": obj.Glaucoma,
-#                 "Other_glasses": obj.Other_glasses,
-#                 "Other": obj.Other,
-#                 "none": obj.none,
-#             },
-#             "relationshipwithchild": obj.relationshipwithchild,
-#             "SerachTerm": obj.search_term if obj.search_term else "",
-#         }
-
-#         return Response(
-#             {
-#                 "body": response_data,
-#                 "message": "Family History saved successfully"
-#                 if created
-#                 else "Family History updated successfully",
-#                 "error": False,
-#             },
-#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-#         )
-
-#     def get(self, request):
-#         """Retrieve a specific Family History record based on reference number"""
-#         reference_number = request.GET.get(
-#             "reference_number"
-#         )  # Get reference_number from query params
-
-#         if not reference_number:
-#             return Response(
-#                 {"message": "Reference number is required", "error": True},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         # Fetch the latest record for the given reference_number
-#         family_history = (
-#             FamilyHistory.objects.filter(reference_number=reference_number)
-#             .order_by("-id")
-#             .first()
-#         )
-
-#         if not family_history:
-#             return Response(
-#                 {"message": "Family History record not found", "error": True},
-#                 status=status.HTTP_404_NOT_FOUND,
-#             )
-
-#         # Formatting response in the required structure
-#         response_data = {
-#             "reference_number": family_history.reference_number,
-#             "family_history": {
-#                 "Hypertension": family_history.Hypertension,
-#                 "Diabetes": family_history.Diabetes,
-#                 "Cataract": family_history.Cataract,
-#                 "Glaucoma": family_history.Glaucoma,
-#                 "Other_glasses": family_history.Other_glasses,
-#                 "Other": family_history.Other,
-#                 "none": family_history.none,
-#             },
-#             "relationshipwithchild": family_history.relationshipwithchild,
-#             "SerachTerm": family_history.search_term
-#             if family_history.search_term
-#             else "",
-#         }
-
-#         return Response(
-#             {"body": response_data, "error": False}, status=status.HTTP_200_OK
-#         )
-
-
-class FamilyHistoryAPIView(APIView):
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        data = request.data.copy()
-
-        # ✅ Normalize all boolean fields: ensure True/False saved correctly
-        bool_fields = [
-            "Hypertension",
-            "Diabetes",
-            "Cataract",
-            "Glaucoma",
-            "Other_glasses",
-            "Other",
-            "none",
-        ]
-        for field in bool_fields:
-            value = data.get(field)
-            data[field] = str(value).lower() in ["true", "1", "yes"]
-
-            # ✅ if False, remove related relationship fields
-            if not data[field]:
-                rel_field = f"{field}_relationship"
-                if rel_field in data:
-                    data.pop(rel_field, None)
-
-        # ✅ Create or Update
-        obj, created = FamilyHistory.objects.update_or_create(
-            reference_number=reference_number, defaults=data
-        )
-
-        # ✅ Update Participant flag
-        try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.family_history = True
-            participant.save()
-        except Participant.DoesNotExist:
-            pass
-
-        serializer = FamilyHistorySerializer(obj)
-
-        return Response(
-            {
-                "body": serializer.data,
-                "message": "Family History created successfully"
-                if created
-                else "Family History updated successfully",
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
-
-    def get(self, request):
-        reference_number = request.GET.get("reference_number")
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        family_history = FamilyHistory.objects.filter(
-            reference_number=reference_number
-        ).first()
-        if not family_history:
-            return Response(
-                {"message": "Family History record not found", "error": True},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        serializer = FamilyHistorySerializer(family_history)
-        return Response(
-            {"body": serializer.data, "error": False}, status=status.HTTP_200_OK
-        )
-
-
-# current-medical API
-class CurrentMedicalAPIView(APIView):
-    serializer_class = CurrentMedicalSerializer
-
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        obj, created = CurrentMedicalTreatment.objects.update_or_create(
-            reference_number=reference_number, defaults=request.data
-        )
-
-        # Try updating Participant model if it exists
-        try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.current_medical_treatment = (
-                True  # Assuming this field exists in Participant model
-            )
-            participant.save()
-        except Participant.DoesNotExist:
-            pass  # If Participant does not exist, do nothing
-
-        return Response(
-            {
-                "message": "CurrentMedicalTreatment saved successfully"
-                if created
-                else "CurrentMedicalTreatment updated successfully",
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
-
-    def get(self, request):
-        """Retrieve Current Medical Treatment based on reference number"""
-        reference_number = request.GET.get(
-            "reference_number"
-        )  # Get reference_number from query params
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Fetch the record, if it exists
-        current_medical = get_object_or_404(
-            CurrentMedicalTreatment, reference_number=reference_number
-        )
-
-        # Serialize the response
-        serializer = CurrentMedicalSerializer(current_medical)
-
-        return Response(
-            {
-                "message": "Current Medical Treatment retrieved successfully",
-                "body": serializer.data,
-                "error": False,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
-# Visual-Acuity API
-
-
-class VisualAcuityMeasurementAPIView(APIView):
-    serializer_class = VisualacuitySerializer
-
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-        screening_result = request.data.get('screening_result')  # Receives 'pass' or 'fail'
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        obj, created = VisualAcuityMeasurement.objects.update_or_create(
-            reference_number=reference_number, defaults=request.data
-        )
-
-        # Try updating Participant model if it exists
-        try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.measure_visual_acuity = (
-                True  # Assuming this field exists in Participant model
-            )
-            participant.save()
-        except Participant.DoesNotExist:
-            pass  # If Participant does not exist, do nothing
-
-        return Response(
-            {
-                "message": "Measure Visual acuity saved successfully"
-                if created
-                else "Measure Visual acuity updated successfully",
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
-
-    def get(self, request):
-        """Retrieve visual acuity measurement record based on reference number"""
-        reference_number = request.GET.get(
-            "reference_number"
-        )  # Get reference_number from query params
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        measurement = get_object_or_404(
-            VisualAcuityMeasurement, reference_number=reference_number
-        )  # Fetch the record
-        serializer = self.serializer_class(measurement)  # Serialize the record
-
-        return Response(
-            {"body": serializer.data, "error": False}, status=status.HTTP_200_OK
-        )
-
-
-# Refraction-Spectacle API
-# class RefractionSpectacleAPIView(APIView):
-#     def post(self, request):
-#         reference_number = request.data.get("reference_number")
-
-#         if not reference_number:
-#             return Response(
-#                 {"message": "Reference number is required", "error": True},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         obj, created = RefractionSpectacle.objects.update_or_create(
-#             reference_number=reference_number, defaults=request.data
-#         )
-
-#         # Try updating Participant model if it exists
-#         try:
-#             participant = Participant.objects.get(reference_number=reference_number)
-#             participant.refraction_spectacle_presentation = (
-#                 True  # Assuming this field exists in Participant model
-#             )
-#             participant.save()
-#         except Participant.DoesNotExist:
-#             pass  # If Participant does not exist, do nothing
-
-#         return Response(
-#             {
-#                 "message": "RefractionSpectacle saved successfully"
-#                 if created
-#                 else "RefractionSpectacle updated successfully",
-#                 "error": False,
-#             },
-#             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-#         )
-
-#     def get(self, request):
-#         """Retrieve Refraction Spectacle based on reference number"""
-#         reference_number = request.GET.get(
-#             "reference_number"
-#         )  # Get reference_number from query params
-
-#         if not reference_number:
-#             return Response(
-#                 {"message": "Reference number is required", "error": True},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         # Fetch the record, if it exists
-#         refraction_spectacle = get_object_or_404(
-#             RefractionSpectacle, reference_number=reference_number
-#         )
-
-#         # Serialize the response
-#         serializer = RefractionSpectacleSerializer(refraction_spectacle)
-
-#         return Response(
-#             {
-#                 "message": "Refraction Spectacle retrieved successfully",
-#                 "body": serializer.data,
-#                 "error": False,
-#             },
-#             status=status.HTTP_200_OK,
-#         )
-
-
-class RefractionSpectacleAPIView(APIView):
-    def post(self, request):
-        reference_number = request.data.get("reference_number")
-
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Update or create record
-        obj, created = RefractionSpectacle.objects.update_or_create(
-            reference_number=reference_number,
-            defaults=request.data,
-        )
-
-        # ✅ Update Participant model if it exists
-        try:
-            participant = Participant.objects.get(reference_number=reference_number)
-            participant.refraction_spectacle_presentation = True
-            participant.save()
-        except Participant.DoesNotExist:
-            pass
-
-        return Response(
-            {
-                "message": "Refraction Spectacle created successfully"
-                if created
-                else "Refraction Spectacle updated successfully",
-                "error": False,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
-
-    def get(self, request):
-        reference_number = request.GET.get("reference_number")
-        if not reference_number:
-            return Response(
-                {"message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        refraction_spectacle = get_object_or_404(
-            RefractionSpectacle, reference_number=reference_number
-        )
-
-        serializer = RefractionSpectacleSerializer(refraction_spectacle)
-
-        return Response(
-            {
-                "message": "Refraction Spectacle retrieved successfully",
-                "body": serializer.data,
-                "error": False,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
-# sahithi's code
-# class ComplaintView(APIView):
-#     def post(self, request):
-#         """
-#         Create a new patient complaint with selected complaints.
-#         """
-#         serializer = PatientComplaintSerializer(data=request.data)
-#         if serializer.is_valid():
-#             # Save the patient complaint object
-#             patient_complaint = serializer.save()
-#             return Response(
-#                 {
-#                     "body": PatientComplaintSerializer(patient_complaint).data,
-#                     "message": "Details updated successfully.",
-#                     "error": False,
-#                 },
-#                 status=status.HTTP_201_CREATED,
-#             )
-
-
-#         return Response(
-#             {"body": [], "message": "Failed to update details.", "error": True},
-#             status=status.HTTP_400_BAD_REQUEST,
-#         )
-
-
-class ComplaintView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        reference_number = request.query_params.get("reference_number")
-
-        if reference_number:
-            complaints = PatientComplaint.objects.filter(
-                reference_number=reference_number, created_by=request.user
-            )
-        else:
-            complaints = PatientComplaint.objects.filter(created_by=request.user)
-
-        serializer = PatientComplaintSerializer(complaints, many=True)
-
-        if serializer.data:
-            return Response(
-                {
-                    "body": serializer.data,
-                    "message": "Data fetched successfully",
-                    "error": False,
-                },
-                status=status.HTTP_200_OK,
-            )
-        return Response(
-            {"body": [], "message": "No records found", "error": True},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
-    def post(self, request, *args, **kwargs):
-        reference_number = request.data.get("reference_number")
-        if not reference_number:
-            return Response(
-                {"body": {}, "message": "Reference number is required", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        instance = PatientComplaint.objects.filter(
-            reference_number=reference_number
-        ).first()
-        if instance:
-            serializer = PatientComplaintSerializer(
-                instance, data=request.data, partial=True
-            )
-        else:
-            serializer = PatientComplaintSerializer(data=request.data)
-
-        if serializer.is_valid():
-            complaint = serializer.save(created_by=request.user)
-
-            return Response(
-                {
-                    "body": PatientComplaintSerializer(complaint).data,
-                    "message": "Details updated successfully"
-                    if instance
-                    else "Details created successfully",
-                    "error": False,
-                },
-                status=status.HTTP_200_OK if instance else status.HTTP_201_CREATED,
-            )
-        first_error = next(iter(serializer.errors.values()))[0]
-        return Response(
-            {
-                "body": {},
-                "message": f"Validation failed - {first_error}",
-                "error": True,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-class FailedStudents(APIView):
-    def get(self, request):
-        # Get the school ID from query parameters
-        school_id = request.query_params.get("school")
-
-        # Check if school ID is provided
-        if not school_id:
-            return Response(
-                {"body": [], "message": "School ID is required.", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            # Fetch the school by ID
-            school = school.objects.get(id=school_id)
-        except school.DoesNotExist:
-            return Response(
-                {"body": [], "message": "School not found.", "error": True},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # Filter students who failed the first screening for the given school
-        failed_students = Firstscreening.objects.filter(
-            school=school, first_screening_passed=False
-        )
-
-        # Serialize the failed students data
-        serializer = FirstScreeningSerializer(failed_students, many=True)
-
-        return Response(
-            {
-                "body": serializer.data,
-                "message": "Failed students retrieved successfully.",
-                "error": False,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-    # class ReferenceNumberCheckAPIView(APIView):
-    def post(self, request):
-        file = request.FILES.get("file")
-
-        if not file:
-            return Response(
-                {"message": "No file uploaded", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            # Load the Excel file
-            workbook = openpyxl.load_workbook(file)
-            sheet = workbook.active
-
-            reference_numbers = set()  # Store unique reference numbers
-            existing_reference_numbers = (
-                set()
-            )  # Store reference numbers already in the database
-            pattern = re.compile(
-                r"^[A-Za-z0-9]+$"
-            )  # Match alphanumeric reference numbers (e.g., DGF288401)
-
-            # Loop through all rows and cells to find all valid reference numbers
-            for row in sheet.iter_rows(values_only=True):
-                for cell in row:
-                    if isinstance(cell, str) and pattern.match(
-                        cell
-                    ):  # Check for valid reference number
-                        ref_number = cell.strip()
-                        # Check if reference number already exists in the database
-                        if Firstscreening.objects.filter(
-                            reference_number=ref_number
-                        ).exists():
-                            existing_reference_numbers.add(ref_number)
-                        reference_numbers.add(ref_number)
-
-            if not reference_numbers:
-                return Response(
-                    {
-                        "message": "No valid reference numbers found in the file",
-                        "error": True,
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Check if any reference numbers already exist in the database
-            if existing_reference_numbers:
-                return Response(
-                    {
-                        "message": f"The following reference numbers already exist: {', '.join(existing_reference_numbers)}",
-                        "is_unique": False,
-                        "error": True,
-                    },
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            # If all reference numbers are valid and unique, return success without the actual numbers
-            return Response(
-                {
-                    "message": "All reference numbers are valid and unique",
-                    "is_unique": True,
-                    "error": False,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        except openpyxl.utils.exceptions.InvalidFileException:
-            return Response(
-                {"message": "Invalid or corrupted Excel file", "error": True},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception as e:
-            return Response(
-                {
-                    "message": "An error occurred while processing the file",
-                    "details": str(e),
-                    "error": True,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-
-import hashlib
-import time
-
-import requests
-
-APP_KEY = "515264"
-APP_SECRET = "4vm5gdmjKsw3vs8bTPmzJhYtfvYdjTHX"
-
-
-def generate_sign(params, app_secret):
-    # Sort parameters alphabetically by key name
-    sorted_keys = sorted(params.keys())
-    sign_str = app_secret + "".join(f"{k}{params[k]}" for k in sorted_keys) + app_secret
-    return hashlib.md5(sign_str.encode("utf-8")).hexdigest().upper()
-
-
-class AliExpressProductSearchAPIView(APIView):
-    def post(self, request):
-        keyword = request.data.get("keyword")
-        if not keyword:
-            return Response(
-                {"error": "Missing 'keyword' in request body"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        url = "https://api-sg.aliexpress.com/sync"
-
-        params = {
-            "method": "aliexpress.affiliate.product.query",
-            "app_key": APP_KEY,
-            "sign_method": "md5",
-            "timestamp": str(int(time.time() * 1000)),
-            "keywords": keyword,
-            "fields": "product_id,product_title,product_url,image_url,sale_price",
-            "page_no": "1",
-            "page_size": "5",
-            "target_currency": "USD",
-            "target_language": "EN",
-            "country": "US",
-        }
-
-        # Generate signature
-        params["sign"] = generate_sign(params, APP_SECRET)
-
-        try:
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            return Response(response.json())
-        except requests.exceptions.RequestException as e:
-            return Response(
-                {"error": "AliExpress API request failed", "details": str(e)},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-
-
-# get all participants registered by the logged in user
-# class UserParticipantsAPIView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         user_refs = Participant.objects.filter(created_by=request.user).values_list(
-#             "reference_number", flat=True
-#         )
-
-#         print("User Reference Numbers:", list(user_refs))
-
-#         combined_data = []
-
-#         for ref in user_refs:
-#             # merged_obj = {"reference_number": ref}
-#             merged_obj = {}
-
-#             # FirstScreening
-#             first = Firstscreening.objects.filter(reference_number=ref).first()
-#             if first:
-#                 merged_obj.update(FirstScreeningSerializer(first).data)
-
-#             # SecondScreening
-#             second = SecondScreening.objects.filter(reference_number=ref).first()
-
-#             if second:
-#                 merged_obj.update(SecondscreeningSerializer(second).data)
-
-#             # Dispensing (latest)
-#             dispensing = (
-#                 Dispensing.objects.filter(reference_number=ref).order_by("-id").first()
-#             )
-
-#             if dispensing:
-#                 print("done dispensing-->>>")
-#                 merged_obj.update(DispensingSerializer(dispensing).data)
-
-#             if merged_obj:
-#                 print("merged_obj-->>>", merged_obj)
-
-#                 combined_data.append(merged_obj)
-
-#         return Response(
-#             {
-#                 "body": combined_data,
-#                 "message": "All participants retrieved successfully.",
-#                 "error": False,
-#             },
-#             status=status.HTTP_200_OK,
-#         )
-
-
-class UserParticipantsAPIView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user_refs = Participant.objects.filter(created_by=request.user).values_list(
-            "reference_number", flat=True
-        )
-
-        combined_data = []
-        for ref in user_refs:
-            merged = {}
-            first = Firstscreening.objects.filter(reference_number=ref).first()
-            second = SecondScreening.objects.filter(reference_number=ref).first()
-            dispensing = (
-                Dispensing.objects.filter(reference_number=ref).order_by("-id").first()
-            )
-
-            if first:
-                merged.update(FirstScreeningSerializer(first).data)
-            if second:
-                merged.update(SecondscreeningSerializer(second).data)
-            if dispensing:
-                merged.update(DispensingSerializer(dispensing).data)
-
-            if merged:
-                combined_data.append(merged)
-
-        return Response(
-            {
-                "body": combined_data,
-                "message": "All participants retrieved successfully.",
-                "error": False,
-            },
-            status=status.HTTP_200_OK,
-        )
+           
