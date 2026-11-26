@@ -255,72 +255,37 @@ class RefractionSpectacleSerializer(serializers.ModelSerializer):
 #         fields = "__all__"
 
 
-
-class ComplaintItemSerializer(serializers.Serializer):
-    category = serializers.ChoiceField(choices=PatientComplaint.CATEGORY_CHOICES)
-    label = serializers.CharField(max_length=100)
-    eye_side = serializers.ChoiceField(choices=PatientComplaint.EYE_SIDE_CHOICES)
-    onset = serializers.ChoiceField(choices=PatientComplaint.ONSET_CHOICES)
-    duration = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
-    reporter = serializers.ChoiceField(choices=PatientComplaint.REPORTER_CHOICES)
-
-
-class OtherComplaintSerializer(serializers.Serializer):
-    selected = serializers.BooleanField(default=True)
-    description = serializers.CharField(max_length=255)
-    eye_side = serializers.ChoiceField(choices=PatientComplaint.EYE_SIDE_CHOICES)
-    onset = serializers.ChoiceField(choices=PatientComplaint.ONSET_CHOICES)
-    duration = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
-    reporter = serializers.ChoiceField(choices=PatientComplaint.REPORTER_CHOICES)
-
-
 class PatientComplaintSerializer(serializers.ModelSerializer):
-    complaints_data = ComplaintItemSerializer(many=True, required=False, default=list)
-    other_complaint = OtherComplaintSerializer(required=False, allow_null=True)
-    selected_complaint = serializers.ListField(
-        child=serializers.CharField(), required=False, read_only=True
-    )
+    selected_complaint = serializers.ListField(child=serializers.CharField())
 
     class Meta:
         model = PatientComplaint
         fields = "__all__"
-        extra_kwargs = {
-            "created_by": {"read_only": True},
-            "reference_number": {"validators": []},  # Handled via upsert in view
-        }
-
-    def validate(self, attrs):
-        no_concerns = attrs.get(
-            "no_concerns",
-            getattr(self.instance, "no_concerns", False),
-        )
-        complaints_data = attrs.get(
-            "complaints_data",
-            getattr(self.instance, "complaints_data", []),
-        )
-        other_complaint = attrs.get(
-            "other_complaint",
-            getattr(self.instance, "other_complaint", None),
-        )
-
-        has_other = bool(other_complaint and other_complaint.get("selected"))
-
-        if no_concerns:
-            attrs["complaints_data"] = []
-            attrs["other_complaint"] = None
-        elif not complaints_data and not has_other:
-            raise serializers.ValidationError(
-                'Select at least one complaint/observation or check "No concerns".'
-            )
-
-        return attrs
+        extra_kwargs = {"created_by": {"read_only": True}}
 
     def to_representation(self, instance):
+        """Convert DB string -> list for API response"""
         representation = super().to_representation(instance)
         representation["selected_complaint"] = (
-            instance.selected_complaint.split(",") if instance.selected_complaint else []
+            instance.get_complaints() if instance.selected_complaint else []
         )
         return representation
+
+    def create(self, validated_data):
+        complaints = validated_data.pop("selected_complaint", [])
+        instance = PatientComplaint.objects.create(**validated_data)
+        instance.set_complaints(complaints)
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        complaints = validated_data.pop("selected_complaint", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if complaints is not None:
+            instance.set_complaints(complaints)
+        instance.save()
+        return instance
 
 
 class ComprehensiveEyeTestSerializer(serializers.ModelSerializer):
